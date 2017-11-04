@@ -1,6 +1,6 @@
 # Synth
 
-The parser templating engine is at the core of Poli compilation and parsing. It defines Rules that match a concrete Pattern and replaces it with a Substitution. Source is tokenized into predefined generic Tokens which then can be used by the engine to translate.
+**Synth** parser templating engine is at the core of Poli compilation and parsing. It defines Rules that match a concrete Pattern and replaces it with a Substitution. Source is tokenized into predefined generic Tokens which then can be used by the engine to translate.
 
 ## Format
 
@@ -10,15 +10,17 @@ Rule := Pattern
 // Comment
 ```
 
-**Rule** - the name of the rule, the alias of the pattern (see Pattern expansion).
+**Rule** - the name of the rule.
+
 **Pattern** - the pattern of Tokens that must match.
+
 **Substitution** - the replacement Tokens that will be inserted in place of the pattern. It is tokenized the same way as the source.
 
 ```
-     TEMPLATE     |    INPUT    |   OUTPUT
- -----------------+-------------+-----------
- example := hello | hello world | bye world
-     bye          |             |
+    TEMPLATE     |    INPUT    |   OUTPUT
+-----------------+-------------+-----------
+example := hello | hello world | bye world
+    bye          |             |
 ```
 
 ## Pattern rules
@@ -41,15 +43,15 @@ Patterns are based on Token Types and Lexemes (the string part of a Token). Toke
 ### Aliasing
 
 Pattern elements can be aliased using the `:` operator for later expansion/retrieval. If a Rule *`(a:rule)`* is aliased, the alias will contain the Substitution the Rule created. Aliases can be retreived in Substitution by prepending them with `:`.
-To use the `:` Symbol in Pattern or Substitution, it must be escaped with `\` like `\:`.
+To use the `:` Symbol in Pattern or Substitution, it must be escaped with `\` like `\:`, like all `:` operators.
 
 ```
-          TEMPLATE        |  INPUT   |   OUTPUT
- -------------------------+----------+-------------
- rule := alias:INTEGER    | 1234567  | foo 1234567
-     foo :alias           | 123 farb | farb 123
- thing := r:rule w:WORD   |          |
-     :w :r                |          |
+         TEMPLATE        |  INPUT   |   OUTPUT
+-------------------------+----------+-------------
+rule := alias:INTEGER    | 1234567  | foo 1234567
+    foo :alias           | 123 farb | farb 123
+thing := r:rule w:WORD   |          |
+    :w :r                |          |
 ```
 
 ### Non-matching Rules
@@ -57,24 +59,23 @@ To use the `:` Symbol in Pattern or Substitution, it must be escaped with `\` li
 Rules can be marked as non-matching using the `!` operator. These Rules will not match patterns on their own, but can still be used within other patterns.
 
 ```
-        TEMPLATE       |    INPUT    |    OUTPUT
- ----------------------+-------------+-------------
- !bar := foo a:INTEGER | foo 1234567 | foo 1234567
-     bar :a            | bar 1234567 | foo 1234567
- foo := bar            |             |
- 	foo                |             |
+       TEMPLATE       |    INPUT    |    OUTPUT
+----------------------+-------------+-------------
+!bar := foo a:INTEGER | foo 1234567 | foo 1234567
+    bar :a            | bar 1234567 | foo 1234567
+foo := bar            |             |
+    foo               |             |
 ```
 
 ### Concatenation
 
 Substitution elements can be concatenated using the `:()` operator.  This is useful for operators that consist of multiple Symbols, as the Tokenizer does not concatenate them in order to be more generic.
-To use `:(` Symbol in Substitution, `:` must be escaped.
 
 ```
-               TEMPLATE              |     INPUT     |      OUTPUT
- ------------------------------------+---------------+------------------
- rule := a:SYMBOL b:SYMBOL c:WORD    | thing = = bar | thing == ( bar )
-     :(:a :b) (:c)                   |               |
+              TEMPLATE              |     INPUT     |      OUTPUT
+------------------------------------+---------------+------------------
+rule := a:SYMBOL b:SYMBOL c:WORD    | thing = = bar | thing == ( bar )
+    :(:a :b) (:c)                   |               |
 ```
 
 ### Recursion
@@ -82,12 +83,12 @@ To use `:(` Symbol in Substitution, `:` must be escaped.
 Rule Variants can be defined with the same name multiple times, as well as refer to themselves in the Pattern. Recursive Rule should be preceded by a different Rule, Type or Lexeme, otherwise infinite recursion will occur.
 
 ```
-         TEMPLATE              |      INPUT      |     OUTPUT
- ------------------------------+-----------------+---------------
- exp := INTEGER                | 123 + 456 + 789 | r o (r o (t))
-    t                          | 123 + 456       | r o (t)
- exp := INTEGER SYMBOL l:exp   | 123             | t
-   	r o (:l)                   |                 |
+        TEMPLATE              |      INPUT      |     OUTPUT
+------------------------------+-----------------+---------------
+exp := INTEGER                | 123 + 456 + 789 | r o (r o (t))
+   t                          | 123 + 456       | r o (t)
+exp := INTEGER SYMBOL l:exp   | 123             | t
+   r o (:l)                   |                 |
 ```
 
 ### Functions and Conditional Substitution
@@ -138,7 +139,7 @@ else(if) := else b:block
 ### Errors and Warnings
 
 Errors can be thrown by using the `:!` operator, mainly used in conjunction with Flag operators `:?` and `:*`.
-Warnings can be shows by using the `:#` operator.
+Warnings can be shown by using the `:#` operator.
 
 ```
 break(while) := break
