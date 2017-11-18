@@ -1,0 +1,6 @@
+[package]
+name = "synth"
+version = "0.0.0"
+authors = ["evolbug <https://github.com/evolbug>", "nilq <https://github.com/nilq>"]
+
+[dependencies]
