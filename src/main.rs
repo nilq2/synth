@@ -3,7 +3,7 @@ use std::io::BufReader;
 use std::io::prelude::*;
 use std::iter::{Peekable, Enumerate};
 use std::str::Chars;
-
+use std::rc::Rc;
 
 #[derive(Debug, PartialEq)]
 pub enum Type {
@@ -19,79 +19,79 @@ pub enum Type {
     EOF,
 }
 
-
-
 #[derive(Debug)]
-pub struct Token<'a> {
-    pub ttype: Type,
-    pub line: usize,
-    pub slice: (usize, usize),
-    pub lexeme: Option<&'a str>,
+pub struct Token {
+    pub token_type: Type,
+    pub line:       usize,
+    pub slice:      (usize, usize),
+    pub lexeme:     Option<Rc<String>>,
 }
 
-impl<'a> Token<'a> {
-    fn new (
-        ttype: Type,
-        line: usize,
-        slice: (usize, usize),
-        lexeme: Option<&'a str>
+impl Token {
+    pub fn new(
+        token_type: Type,
+        line:       usize,
+        slice:      (usize, usize),
+        lexeme:     Option<Rc<String>>,
     ) -> Token {
-        Token { ttype, line, slice, lexeme }
+        Token {
+            token_type,
+            line,
+            slice,
+            lexeme,
+        }
     }
 
-    fn number (line: usize, slice: (usize, usize), lexeme: &'a str) -> Token<'a> {
-        Token::new(Type::Number, line+1, slice, Some(lexeme))
+    fn number (line: usize, slice: (usize, usize), lexeme: &str) -> Token {
+        Token::new(Type::Number, line+1, slice, Some(Rc::new(lexeme.to_string())))
     }
 
-    fn string (line: usize, slice: (usize, usize), lexeme: &'a str) -> Token<'a> {
-        Token::new(Type::String, line+1, slice, Some(lexeme))
+    fn string (line: usize, slice: (usize, usize), lexeme: &str) -> Token {
+        Token::new(Type::String, line+1, slice, Some(Rc::new(lexeme.to_string())))
     }
 
-    fn word (line: usize, slice: (usize, usize), lexeme: &'a str) -> Token<'a> {
-        Token::new(Type::Word, line+1, slice, Some(lexeme))
+    fn word (line: usize, slice: (usize, usize), lexeme: &str) -> Token {
+        Token::new(Type::Word, line+1, slice, Some(Rc::new(lexeme.to_string())))
     }
 
-    fn symbol (line: usize, slice: (usize, usize), lexeme: &'a str) -> Token<'a> {
-        Token::new(Type::Symbol, line+1, slice, Some(lexeme))
+    fn symbol (line: usize, slice: (usize, usize), lexeme: &str) -> Token {
+        Token::new(Type::Symbol, line+1, slice, Some(Rc::new(lexeme.to_string())))
     }
 
-    fn indent (line: usize) -> Token<'a> {
+    fn indent (line: usize) -> Token {
         Token::new(Type::Indent, line+1, (0,0), None)
     }
 
-    fn dedent (line: usize) -> Token<'a> {
+    fn dedent (line: usize) -> Token {
         Token::new(Type::Dedent, line+1, (0,0), None)
     }
 
-    fn newline (line: usize) -> Token<'a> {
+    fn newline (line: usize) -> Token {
         Token::new(Type::EOL, line+1, (0,0), None)
     }
 
-    fn eof (line: usize) -> Token<'a> {
+    fn eof (line: usize) -> Token {
         Token::new(Type::EOF, line+1, (0,0), None)
     }
 }
 
-
-
-
 #[derive(Debug)]
-pub struct Source<'a> {
-    path: String,
-    lines: Vec<String>,
-    tokens: Option<Vec<Token<'a>>>,
-    directives: Vec<(String, String)>, // control directives
+pub struct Source {
+    path:       Rc<String>,
+    lines:      Vec<Rc<String>>,
+    tokens:     Option<Vec<Token>>,
+    directives: Vec<(Rc<String>, Rc<String>)>,
 }
 
-impl<'a> Source<'a> {
-    pub fn new (path: &str, ctrl_char: Option<&str>) -> Source<'a> {
+impl Source {
+    pub fn new (path: &str, ctrl_char: Option<&str>) -> Source {
         let f: File = match File::open(path) {
             Ok(v) => v,
             Err(_) => panic!("No such file: {}", &path),
         };
 
-        let mut lines: Vec<String> = Vec::new();
-        let mut directives: Vec<(String, String)> = Vec::new();
+        let mut lines: Vec<Rc<String>> = Vec::new();
+        let mut directives: Vec<(Rc<String>, Rc<String>)> = Vec::new();
 
         let file = BufReader::new(&f);
 
@@ -101,46 +101,46 @@ impl<'a> Source<'a> {
 
                 if line.starts_with(ctrl) {
                     directives.push ((
-                        line[ctrl.len()..line.find(" ").unwrap()].to_string(),
-                        line[line.find(" ").unwrap()+1..].to_string()
+                        Rc::new(line[ctrl.len() .. line.find(" ").unwrap()].to_string()),
+                        Rc::new(line[line.find(" ").unwrap()+1..].to_string()),
                     ));
-                    lines.push("".to_string());
+                    lines.push(Rc::new("".to_string()));
 
                 } else {
-                    lines.push(line);
+                    lines.push(Rc::new(line));
                 }
             }
 
         } else {
             for line in file.lines() {
                 let line = line.unwrap();
-                lines.push(line);
+                lines.push(Rc::new(line));
             }
         }
 
         Source {
-            path: path.to_string(),
-            lines: lines,
-            tokens: None,
+            path:       Rc::new(path.to_string()),
+            lines:      lines,
+            tokens:     None,
             directives: directives,
         }
     }
 
-    pub fn get_directive (&self, name: &str) -> Option<&String> {
-        self.directives.iter().find(|n| n.0 == name).map(|n| &n.1)
+    pub fn get_directive (&self, name: &str) -> Option<Rc<String>> {
+        match self.directives.iter().find(|n| &**n.0 == name).map(|n| &n.1) {
+            Some(n) => Some(n.to_owned()),
+            None    => None,
+        }
     }
 }
 
-
-
-pub fn matches (iter: &mut Peekable<Enumerate<Chars>>, string: &[&str]) -> Option<String> {
+pub fn matches (iter: &mut Peekable<Enumerate<Chars>>, string: &Vec<Rc<String>>) -> Option<String> {
     None
 }
 
-
-pub fn tokenize<'a> (src: &mut Source<'a>) {
+pub fn tokenize(src: &mut Source) {
     let mut indents = Vec::new();
-    let mut tokens: Vec<Token<'a>> = Vec::new();
+    let mut tokens  = Vec::new();
 
     for (l, line) in src.lines.iter().enumerate() {
         let mut indent = 0;
@@ -148,22 +148,20 @@ pub fn tokenize<'a> (src: &mut Source<'a>) {
         let mut comment = false;
         let mut iter = line.chars().enumerate().peekable();
 
-        let mut string_d: Vec<&str>;
-        let mut comment_d: Vec<&str>;
-
+        let mut string_d:  Vec<Rc<String>> = Vec::new();
+        let mut comment_d: Vec<Rc<String>> = Vec::new();
 
         if let Some(string_delim) = src.get_directive("string") {
             for delim in string_delim.split_whitespace() {
-                string_d.push(delim);
+                string_d.push(Rc::new(delim.to_string()));
             }
         }
 
         if let Some(comment_delim) = src.get_directive("comment") {
             for delim in comment_delim.split_whitespace() {
-                comment_d.push(delim);
+                comment_d.push(Rc::new(delim.to_string()));
             }
         }
-
 
         while let Some((from, next)) = iter.next() {
             if !start && next.is_whitespace() {
@@ -210,7 +208,7 @@ pub fn tokenize<'a> (src: &mut Source<'a>) {
                     let mut last = next;
 
                     while let Some(&(to, next)) = iter.peek() {
-                        if last != '\\' && matches(&mut iter.clone(), &[&delim]) != None {
+                        if last != '\\' && matches(&mut iter.clone(), &vec![Rc::new(delim.clone())]) != None {
                             tokens.push(Token::string(l, (from+1, to), &line[from+1..to]));
                             iter.nth(delim.len()-1);
                             break;
@@ -229,7 +227,7 @@ pub fn tokenize<'a> (src: &mut Source<'a>) {
         }
 
 
-        if tokens.last().map(|t| t.ttype != Type::EOL).unwrap_or(false) {
+        if tokens.last().map(|t| t.token_type != Type::EOL).unwrap_or(false) {
             tokens.push(Token::newline(l));
         }
 
@@ -239,18 +237,17 @@ pub fn tokenize<'a> (src: &mut Source<'a>) {
     for _ in indents {
         tokens.push(Token::dedent(src.lines.len()));
     }
+
     tokens.push(Token::eof(src.lines.len()));
-    src.tokens = Some(tokens);
+    src.tokens = Some(tokens)
 }
 
-
-
-fn main () {
+fn main() {
     let mut s = Source::new("../examples/expressions.pi", Some("//!"));
 
     tokenize(&mut s);
 
     for token in s.tokens.unwrap() {
-        println!("{:#?}: {:?} ", token.ttype, token.lexeme);
+        println!("{:#?}: {:?} ", token.token_type, token.lexeme);
     }
 }
