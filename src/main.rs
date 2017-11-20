@@ -133,14 +133,14 @@ impl<'a> Source<'a> {
 
 
 
-pub fn matches (iter: &mut Peekable<Enumerate<Chars>>, string: &[String]) -> Option<String> {
+pub fn matches (iter: &mut Peekable<Enumerate<Chars>>, string: &[&str]) -> Option<String> {
     None
 }
 
 
-pub fn tokenize (src: &mut Source) {
+pub fn tokenize<'a> (src: &mut Source<'a>) {
     let mut indents = Vec::new();
-    let mut tokens = Vec::new();
+    let mut tokens: Vec<Token<'a>> = Vec::new();
 
     for (l, line) in src.lines.iter().enumerate() {
         let mut indent = 0;
@@ -148,18 +148,19 @@ pub fn tokenize (src: &mut Source) {
         let mut comment = false;
         let mut iter = line.chars().enumerate().peekable();
 
-        let mut string_d = Vec::new();
-        let mut comment_d = Vec::new();
+        let mut string_d: Vec<&str>;
+        let mut comment_d: Vec<&str>;
+
 
         if let Some(string_delim) = src.get_directive("string") {
             for delim in string_delim.split_whitespace() {
-                string_d.push(delim.to_string());
+                string_d.push(delim);
             }
         }
 
         if let Some(comment_delim) = src.get_directive("comment") {
             for delim in comment_delim.split_whitespace() {
-                comment_d.push(delim.to_string());
+                comment_d.push(delim);
             }
         }
 
@@ -209,9 +210,9 @@ pub fn tokenize (src: &mut Source) {
                     let mut last = next;
 
                     while let Some(&(to, next)) = iter.peek() {
-                        if last != '\\' && matches(&mut iter.clone(), &[delim.clone()]) != None {
+                        if last != '\\' && matches(&mut iter.clone(), &[&delim]) != None {
                             tokens.push(Token::string(l, (from+1, to), &line[from+1..to]));
-                            iter = iter.skip(delim.len());
+                            iter.nth(delim.len()-1);
                             break;
                         }
 
