@@ -2,5 +2,5 @@ while inotifywait -q -r -e close_write ./ ../examples/
 do
    clear
    clear
-   cargo run
+   RUST_BACKTRACE=1 cargo run
 done

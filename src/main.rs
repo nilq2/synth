@@ -6,8 +6,7 @@ use std::io::prelude::*;
 
 #[derive(Debug)]
 pub enum Type {
-    Integer,
-    Float,
+    Number,
     String,
     Word,
     Symbol,
@@ -39,12 +38,8 @@ impl Token {
         Token { ttype, line, slice, lexeme }
     }
 
-    fn integer (line: usize, slice: (usize, usize), lexeme: String) -> Token {
-        Token::new(Type::Integer, line+1, slice, Some(lexeme))
-    }
-
-    fn float (line: usize, slice: (usize, usize), lexeme: String) -> Token {
-        Token::new(Type::Float, line+1, slice, Some(lexeme))
+    fn number (line: usize, slice: (usize, usize), lexeme: String) -> Token {
+        Token::new(Type::Number, line+1, slice, Some(lexeme))
     }
 
     fn string (line: usize, slice: (usize, usize), lexeme: String) -> Token {
@@ -140,7 +135,7 @@ impl Source {
 
                 if line.starts_with(ctrl) {
                     directives.push ((
-                        line[2..line.find(" ").unwrap()].to_string(),
+                        line[ctrl.len()..line.find(" ").unwrap()].to_string(),
                         line[line.find(" ").unwrap()+1..].to_string()
                     ));
                     lines.push("".to_string());
@@ -173,18 +168,25 @@ impl Source {
 
 
 pub fn tokenize (src: &mut Source) {
-    let mut indents: Vec<u32> = vec![0];
-    let mut tokens: Vec<Token> = Vec::new();
+    let mut indents = vec![0];
+    let mut tokens = Vec::new();
 
     for (l, line) in src.lines.iter().enumerate() {
         let mut indent = 0;
         let mut start = false;
+        let mut iter = line.chars().enumerate().peekable();
 
-        let mut iter = line.chars().enumerate();
+        let mut sdelim = Vec::new();
 
-        while let Some((c, char)) = iter.next() {
+        if let Some(string_delim) = src.get_directive("string") {
+            for bit in string_delim.split(" ") {
+                sdelim.push(bit.chars().next().unwrap());
+            }
+        }
 
-            if !start && char.is_whitespace() {
+
+        while let Some((from, next)) = iter.next() {
+            if !start && next.is_whitespace() {
                 indent += 1;
 
             } else if !start {
@@ -203,13 +205,48 @@ pub fn tokenize (src: &mut Source) {
             }
 
             if start {
-                if char.is_numeric() {
+                if next.is_numeric() {
+                    while let Some(&(to, next)) = iter.peek() {
+                        if !next.is_numeric() {
+                            tokens.push(Token::number(l, (from, to), String::from(&line[from..to])));
+                            break;
+                        }
 
+                        iter.next();
+                    }
+                } else if next.is_alphabetic() {
+                    while let Some(&(to, next)) = iter.peek() {
+                        if !next.is_alphanumeric() {
+                            tokens.push(Token::word(l, (from, to), String::from(&line[from..to])));
+                            break;
+                        }
+
+                        iter.next();
+                    }
+                } else if sdelim.len() > 0 {
+                    if let Some(delim) = sdelim.iter().find(|&&c| c == next) {
+                        let mut last = next;
+
+                        while let Some(&(to, next)) = iter.peek() {
+                            if next == *delim && last != '\\' {
+                                tokens.push(Token::string(l, (from+1, to), String::from(&line[from+1..to])));
+                                break;
+                            }
+
+                            last = next;
+                            iter.next();
+                        }
+                    }
+                } else if next == '\n' {
+                    tokens.push(Token::newline(l));
+                } else if next.is_whitespace() {
+                } else {
+                    tokens.push(Token::symbol(l, (from, from), String::from(&line[from..from])));
                 }
             }
         }
 
-        println!("{:5}| {}", indent, line);
+        println!("{:5}| {}", l+1, line);
     }
     tokens.push(Token::eof(src.lines.len()));
     src.tokens = Some(tokens);
@@ -218,11 +255,11 @@ pub fn tokenize (src: &mut Source) {
 
 
 fn main () {
-    let mut s = Source::new("testing.t", Some("#!"));
+    let mut s = Source::new("../examples/expressions.pi", Some("//!"));
 
     tokenize(&mut s);
 
-    for token in s.tokens {
-        println!("{:#?}", token);
+    for token in s.tokens.unwrap() {
+        print!("{:?} ", token.lexeme);
     }
 }
