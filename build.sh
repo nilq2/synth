@@ -1,4 +1,4 @@
-while inotifywait -q -r -e modify ./ ../examples/
+while inotifywait -q -r -e close_write ./ ../examples/
 do
    clear
    clear

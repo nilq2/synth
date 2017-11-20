@@ -1,21 +1,30 @@
+#!comment /* */ //
+#!string " '
+
+/*
+    block cooment
+*/
+
+// line cooment
+
 function:
-   decl := name:WORD ( para:params ) type:type
-      [generate]
-         :type :name ( :para )
+    decl := name:WORD ( para:params ) type:type
+        [generate]
+            :type :name ( :para )
 
 params:
-   begin := name:WORD type:type , para:params
-      [generate]
-         :type :name , :para
+    begin := name:WORD type:type , para:params
+        [generate]
+            :type :name , :para
 
-   last := name:WORD type:type
-      [generate]
-         :type :name
+    last := name:WORD type:type
+        [generate]
+            :type :name
 
 type:
-   t := \: name:WORD
-      [generate]
-         :name
+    t := \: name:WORD
+        [generate]
+            :name
 
 newline:
-   newl := NEWLINE
+    newl := NEWLINE
