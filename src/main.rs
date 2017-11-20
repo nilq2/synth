@@ -179,7 +179,7 @@ pub fn tokenize (src: &mut Source) {
         let mut sdelim = Vec::new();
 
         if let Some(string_delim) = src.get_directive("string") {
-            for bit in string_delim.split(" ") {
+            for bit in string_delim.split_whitespace() {
                 sdelim.push(bit.chars().next().unwrap());
             }
         }
@@ -204,6 +204,7 @@ pub fn tokenize (src: &mut Source) {
                 }
             }
 
+
             if start {
                 if next.is_numeric() {
                     while let Some(&(to, next)) = iter.peek() {
@@ -214,6 +215,7 @@ pub fn tokenize (src: &mut Source) {
 
                         iter.next();
                     }
+
                 } else if next.is_alphabetic() {
                     while let Some(&(to, next)) = iter.peek() {
                         if !next.is_alphanumeric() {
@@ -223,8 +225,8 @@ pub fn tokenize (src: &mut Source) {
 
                         iter.next();
                     }
-                } else if sdelim.len() > 0 {
-                    if let Some(delim) = sdelim.iter().find(|&&c| c == next) {
+
+                } else if let Some(delim) = sdelim.iter().find(|&&c| c == next) {
                         let mut last = next;
 
                         while let Some(&(to, next)) = iter.peek() {
@@ -236,12 +238,14 @@ pub fn tokenize (src: &mut Source) {
                             last = next;
                             iter.next();
                         }
-                    }
+
                 } else if next == '\n' {
                     tokens.push(Token::newline(l));
+
                 } else if next.is_whitespace() {
+
                 } else {
-                    tokens.push(Token::symbol(l, (from, from), String::from(&line[from..from])));
+                    tokens.push(Token::symbol(l, (from, from+1), String::from(&line[from..from+1])));
                 }
             }
         }
