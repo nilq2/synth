@@ -1,5 +1,5 @@
-#!comment /* */ //
-#!string " '
+//!comment /* */ //
+//!string " '
 
 /*
     block cooment
