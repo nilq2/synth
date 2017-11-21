@@ -44,35 +44,35 @@ impl Token {
     }
 
     fn number (line: usize, slice: (usize, usize), lexeme: &str) -> Token {
-        Token::new(Type::Number, line+1, slice, Some(Rc::new(lexeme.to_string())))
+        Token::new(Type::Number, line, slice, Some(Rc::new(lexeme.to_string())))
     }
 
     fn string (line: usize, slice: (usize, usize), lexeme: &str) -> Token {
-        Token::new(Type::String, line+1, slice, Some(Rc::new(lexeme.to_string())))
+        Token::new(Type::String, line, slice, Some(Rc::new(lexeme.to_string())))
     }
 
     fn word (line: usize, slice: (usize, usize), lexeme: &str) -> Token {
-        Token::new(Type::Word, line+1, slice, Some(Rc::new(lexeme.to_string())))
+        Token::new(Type::Word, line, slice, Some(Rc::new(lexeme.to_string())))
     }
 
     fn symbol (line: usize, slice: (usize, usize), lexeme: &str) -> Token {
-        Token::new(Type::Symbol, line+1, slice, Some(Rc::new(lexeme.to_string())))
+        Token::new(Type::Symbol, line, slice, Some(Rc::new(lexeme.to_string())))
     }
 
     fn indent (line: usize) -> Token {
-        Token::new(Type::Indent, line+1, (0,0), None)
+        Token::new(Type::Indent, line, (0,0), None)
     }
 
     fn dedent (line: usize) -> Token {
-        Token::new(Type::Dedent, line+1, (0,0), None)
+        Token::new(Type::Dedent, line, (0,0), None)
     }
 
     fn newline (line: usize) -> Token {
-        Token::new(Type::EOL, line+1, (0,0), None)
+        Token::new(Type::EOL, line, (0,0), None)
     }
 
     fn eof (line: usize) -> Token {
-        Token::new(Type::EOF, line+1, (0,0), None)
+        Token::new(Type::EOF, line, (0,0), None)
     }
 }
 
@@ -139,23 +139,26 @@ pub fn matches (first: char, iter: &mut Peekable<Enumerate<Chars>>, delims: &Vec
     let mut matched = true;
 
     for delim in delims {
-        println!("{:#?}", first);
+        // clone so the original is not exhausted if doesn't match
+        let mut it = iter.clone();
         let mut chars = delim.chars();
 
+        // workaround because first char is eaten before
         if chars.next().unwrap() != first {
             matched = false;
         }
 
         for ch in chars {
-            if ch != iter.peek().unwrap_or(&(0,' ')).1 {
+            if ch != it.peek().unwrap_or(&(0,' ')).1 {
                 matched = false;
             }
-            iter.next();
+            it.next();
         }
 
+
         if matched {
-            println!("maatch");
             return Some((*delim).clone());
+
         } else {
             matched = true;
         }
@@ -168,26 +171,37 @@ pub fn tokenize(src: &mut Source) {
     let mut indents = Vec::new();
     let mut tokens  = Vec::new();
 
-    for (l, line) in src.lines.iter().enumerate() {
+    let mut comment = 0; // start of block comment
+
+    for (mut l, line) in src.lines.iter().enumerate() {
+        l += 1; // line offset
+
         let mut indent = 0;
-        let mut start = false;
-        let mut comment = false;
+        let mut start = false; // start of content (after indent)
         let mut iter = line.chars().enumerate().peekable();
 
         let mut string_d:  Vec<Rc<String>> = Vec::new();
         let mut comment_d: Vec<Rc<String>> = Vec::new();
 
+
+        // directive for string parsing
         if let Some(string_delim) = src.get_directive("string") {
             for delim in string_delim.split_whitespace() {
                 string_d.push(Rc::new(delim.to_string()));
             }
         }
 
+
+        // directive for comment parsing
         if let Some(comment_delim) = src.get_directive("comment") {
             for delim in comment_delim.split_whitespace() {
                 comment_d.push(Rc::new(delim.to_string()));
             }
+            if comment_d.len() > 3 {
+                panic!("too many comment delimiters are defined at line {}", l);
+            }
         }
+
 
         while let Some((from, next)) = iter.next() {
             if !start && next.is_whitespace() {
@@ -198,68 +212,122 @@ pub fn tokenize(src: &mut Source) {
 
                 if indent < *indents.last().unwrap_or(&0) {
                     while indent < *indents.last().unwrap_or(&0) {
-                        tokens.push(Token::dedent(l));
-                        indents.pop();
+                        if comment == 0 {
+                            tokens.push(Token::dedent(l));
+                            indents.pop();
+                        }
                     }
 
                 } else if indent > *indents.last().unwrap_or(&0) {
-                    indents.push(indent);
-                    tokens.push(Token::indent(l));
+                    if comment == 0 {
+                        indents.push(indent);
+                        tokens.push(Token::indent(l));
+                    }
                 }
             }
 
 
             if start {
-                if next.is_numeric() {
-                    while let Some(&(_, next)) = iter.peek() {
-                        if !next.is_numeric() {
-                            break;
+                if comment == 0 {
+                    if next.is_numeric() {
+                        while let Some(&(_, next)) = iter.peek() {
+                            if !next.is_numeric() {
+                                break;
+                            }
+                            iter.next();
                         }
-                        iter.next();
-                    }
-                    let to = iter.peek().map(|v| v.0).unwrap_or(line.len());
-                    tokens.push(Token::number(l, (from, to), &line[from..to]));
+                        let to = iter.peek().map(|v| v.0).unwrap_or(line.len());
+                        tokens.push(Token::number(l, (from, to), &line[from..to]));
 
-                } else if next.is_alphabetic() {
-                    while let Some(&(_, next)) = iter.peek() {
-                        if !next.is_alphanumeric() {
-                            break;
+                    } else if next.is_alphabetic() {
+                        while let Some(&(_, next)) = iter.peek() {
+                            if !next.is_alphanumeric() {
+                                break;
+                            }
+                            iter.next();
                         }
-                        iter.next();
-                    }
-                    let to = iter.peek().map(|v| v.0).unwrap_or(line.len());
-                    tokens.push(Token::word(l, (from, to), &line[from..to]));
+                        let to = iter.peek().map(|v| v.0).unwrap_or(line.len());
+                        tokens.push(Token::word(l, (from, to), &line[from..to]));
 
-                } else if let Some(delim) = matches(next, &mut iter.clone(), &string_d) {
-                    let mut last = next;
+                    } else if let Some(delim) = matches(next, &mut iter.clone(), &string_d) {
+                        let mut last = next;
 
-                    println!("MATCH");
+                        while let Some(&(to, next)) = iter.peek() {
+                            if last != '\\' && matches(next, &mut iter.clone(), &vec![delim.clone()]) != None {
+                                tokens.push(Token::string(l, (from+1, to), &line[from+1..to]));
+                                iter.nth(delim.len()-1);
+                                break;
+                            }
 
-                    while let Some(&(to, next)) = iter.peek() {
-                        if last != '\\' && matches(next, &mut iter.clone(), &vec![delim.clone()]) != None {
-                            tokens.push(Token::string(l, (from+1, to), &line[from+1..to]));
-                            iter.nth(delim.len()-1);
-                            break;
+                            last = next;
+                            iter.next();
                         }
 
-                        last = next;
-                        iter.next();
-                    }
+                    } else if let Some(delim) = matches(next, &mut iter.clone(), &comment_d) {
+                        iter.nth(delim.len()-1);
 
-                } else if next.is_whitespace() {
+                        match comment_d.len() {
+                            1 => { // single line
+                                break; // skip the rest of the line
+                            },
+
+                            2 => { // block
+                                if comment_d[1] == delim {
+                                    panic!("unexpected block comment terminator at line {}", l);
+                                } else {
+                                    comment = l; // block comment
+                                }
+                            },
+
+                            3 => { // block and single line
+                                if comment_d[1] == delim {
+                                    panic!("unexpected block comment terminator at line {}", l);
+
+                                } else if comment_d[0] == delim {
+                                    comment = l; // block comment
+                                    break;
+
+                                } else {
+                                    break; // single line
+                                }
+                            },
+
+                            _ => {}
+                        }
+
+                    } else if next.is_whitespace() {
+
+                    } else {
+                        tokens.push(Token::symbol(l, (from, from+1), &line[from..from+1]));
+                    }
 
                 } else {
-                    tokens.push(Token::symbol(l, (from, from+1), &line[from..from+1]));
+                    if let Some(delim) = matches(next, &mut iter.clone(), &comment_d) {
+                        iter.nth(delim.len()-1);
+
+                        match comment_d.len() {
+                            2 | 3 => { // block
+                                if comment_d[1] == delim {
+                                    comment = 0;
+                                }
+                            },
+                            _ => {}
+                        }
+                    }
                 }
             }
         }
 
 
-        if tokens.last().map(|t| t.token_type != Type::EOL).unwrap_or(false) {
+        if comment == 0 && tokens.last().map(|t| t.token_type != Type::EOL).unwrap_or(false) {
             tokens.push(Token::newline(l));
         }
 
-        println!("{:5}| {}", l+1, line);
+        println!("{:5}| {}", l, line);
+    }
+
+    if comment != 0 {
+        panic!("block comment not terminated at line {}", comment);
     }
 
     for _ in indents {
@@ -280,6 +348,6 @@ fn main() {
 
         for token in s.tokens.unwrap() {
             println!("{:#?}: {:?} ", token.token_type, token.lexeme);
-        }    
+        }
     }
 }
