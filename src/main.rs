@@ -134,7 +134,32 @@ impl Source {
     }
 }
 
-pub fn matches (iter: &mut Peekable<Enumerate<Chars>>, string: &Vec<Rc<String>>) -> Option<String> {
+pub fn matches (first: char, iter: &mut Peekable<Enumerate<Chars>>, delims: &Vec<Rc<String>>) -> Option<Rc<String>> {
+    let mut matched = true;
+
+    for delim in delims {
+        println!("{:#?}", first);
+        let mut chars = delim.chars();
+
+        if chars.next().unwrap() != first {
+            matched = false;
+        }
+
+        for ch in chars {
+            if ch != iter.peek().unwrap_or(&(0,' ')).1 {
+                matched = false;
+            }
+            iter.next();
+        }
+
+        if matched {
+            println!("maatch");
+            return Some((*delim).clone());
+        } else {
+            matched = true;
+        }
+    }
+
     None
 }
 
@@ -204,11 +229,13 @@ pub fn tokenize(src: &mut Source) {
                     let to = iter.peek().map(|v| v.0).unwrap_or(line.len());
                     tokens.push(Token::word(l, (from, to), &line[from..to]));
 
-                } else if let Some(delim) = matches(&mut iter.clone(), &string_d) {
+                } else if let Some(delim) = matches(next, &mut iter.clone(), &string_d) {
                     let mut last = next;
 
+                    println!("MATCH");
+
                     while let Some(&(to, next)) = iter.peek() {
-                        if last != '\\' && matches(&mut iter.clone(), &vec![Rc::new(delim.clone())]) != None {
+                        if last != '\\' && matches(next, &mut iter.clone(), &vec![delim.clone()]) != None {
                             tokens.push(Token::string(l, (from+1, to), &line[from+1..to]));
                             iter.nth(delim.len()-1);
                             break;
