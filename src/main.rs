@@ -4,6 +4,7 @@ use std::io::prelude::*;
 use std::iter::{Peekable, Enumerate};
 use std::str::Chars;
 use std::rc::Rc;
+use std::env;
 
 #[derive(Debug, PartialEq)]
 pub enum Type {
@@ -196,7 +197,7 @@ pub fn tokenize(src: &mut Source) {
                 start = true;
 
                 if indent < *indents.last().unwrap_or(&0) {
-                    while indent < *indents.last().unwrap() {
+                    while indent < *indents.last().unwrap_or(&0) {
                         tokens.push(Token::dedent(l));
                         indents.pop();
                     }
@@ -270,11 +271,15 @@ pub fn tokenize(src: &mut Source) {
 }
 
 fn main() {
-    let mut s = Source::new("../examples/expressions.pi", Some("//!"));
+    let args: Vec<String> = env::args().collect();
 
-    tokenize(&mut s);
+    if args.len() > 1 {
+        let mut s = Source::new(&args[1], Some("//!"));
 
-    for token in s.tokens.unwrap() {
-        println!("{:#?}: {:?} ", token.token_type, token.lexeme);
+        tokenize(&mut s);
+
+        for token in s.tokens.unwrap() {
+            println!("{:#?}: {:?} ", token.token_type, token.lexeme);
+        }    
     }
 }
