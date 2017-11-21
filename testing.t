@@ -1,11 +1,21 @@
 //!comment /* */ //
 //!string " '
 
+
+// line cooment
+
 /*
     block cooment
 */
 
-// line cooment
+
+"string"
+'string'
+"'string'"
+'"string"'
+""string""
+
+"\"string\""
 
 function:
     decl := name:WORD ( para:params ) type:type
