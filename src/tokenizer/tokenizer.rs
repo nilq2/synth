@@ -1,6 +1,3 @@
-use std::fs::File;
-use std::io::BufReader;
-use std::io::prelude::*;
 use std::iter::{Peekable, Enumerate};
 use std::str::Chars;
 use std::rc::Rc;
@@ -8,45 +5,35 @@ use std::rc::Rc;
 use super::token::*;
 
 #[derive(Debug)]
-pub struct Source {
+pub struct Source<'a> {
     pub path:       Rc<String>,
-    pub lines:      Vec<Rc<String>>,
-    pub tokens:     Option<Vec<Token>>,
+    pub lines:      Vec<&'a str>,
+    pub tokens:     Option<Vec<Token<'a>>>,
     pub directives: Vec<(Rc<String>, Rc<String>)>,
 }
 
-impl Source {
-    pub fn new (path: &str, ctrl_char: Option<&str>) -> Source {
-        let f: File = match File::open(path) {
-            Ok(v) => v,
-            Err(_) => panic!("No such file: {}", &path),
-        };
-
-        let mut lines: Vec<Rc<String>>                    = Vec::new();
+impl<'a> Source<'a> {
+    pub fn new<'b>(path: &str, ctrl_char: Option<&str>, source_lines: &'b Vec<String>) -> Source<'b> {
+        let mut lines: Vec<&str>                          = Vec::new();
         let mut directives: Vec<(Rc<String>, Rc<String>)> = Vec::new();
 
-        let file = BufReader::new(&f);
-
         if let Some(ctrl) = ctrl_char {
-            for line in file.lines() {
-                let line = line.unwrap();
-
+            for line in source_lines {
                 if line.starts_with(ctrl) {
                     directives.push ((
                         Rc::new(line[ctrl.len() .. line.find(" ").unwrap()].to_string()),
                         Rc::new(line[line.find(" ").unwrap() + 1..].to_string()),
                     ));
-                    lines.push(Rc::new("".to_string()));
+                    lines.push("");
 
                 } else {
-                    lines.push(Rc::new(line));
+                    lines.push(&line);
                 }
             }
 
         } else {
-            for line in file.lines() {
-                let line = line.unwrap();
-                lines.push(Rc::new(line))
+            for line in source_lines {
+                lines.push(&line)
             }
         }
 
