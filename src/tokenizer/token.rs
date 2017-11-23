@@ -1,5 +1,3 @@
-use std::rc::Rc;
-
 #[derive(Debug, PartialEq)]
 pub enum Type {
     Number,
@@ -14,7 +12,7 @@ pub enum Type {
     EOF,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Token<'a> {
     pub token_type: Type,
     pub line:       usize,
@@ -22,19 +20,14 @@ pub struct Token<'a> {
     pub lexeme:     Option<&'a str>,
 }
 
+}
+
+
+
+
 impl<'a> Token<'a> {
-    pub fn new<'b> (
-        token_type: Type,
-        line:       usize,
-        slice:      (usize, usize),
-        lexeme:     Option<&str>,
-    ) -> Token {
-        Token {
-            token_type,
-            line,
-            slice,
-            lexeme,
-        }
+    pub fn new (token_type: Type, line: usize, slice: (usize, usize), lexeme: Option<&str>) -> Token {
+        Token { token_type, line, slice, lexeme }
     }
 
     pub fn number(line: usize, slice: (usize, usize), lexeme: &str) -> Token {

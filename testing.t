@@ -2,21 +2,6 @@
 //!string " '
 
 
-// line cooment
-
-/*
-    block cooment
-*/
-
-
-"string"
-'string'
-"'string'"
-'"string"'
-""string""
-
-"\"string\""
-
 function:
     decl := name:WORD ( para:params ) type:type
         [generate]
