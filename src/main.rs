@@ -3,7 +3,10 @@ use std::io::BufReader;
 use std::io::prelude::*;
 
 mod tokenizer;
+mod parser;
+
 use tokenizer::tokenizer::*;
+use parser::*;
 
 use std::env;
 
