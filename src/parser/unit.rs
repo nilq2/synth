@@ -1,27 +1,32 @@
 use tokenizer::token::Token;
 use tokenizer::tokenizer::Source;
 use template::*;
+use std::sync::Arc;
 
 
 
-pub struct Node<'unit> {
-    name: &'unit Token<'unit>,
-    variant: &'unit Variant<'unit>,
+pub struct Node<'u> {
+    name: &'u Token<'u>,
+    variant: &'u Variant<'u>,
 
-    tokens: Vec<&'unit Token<'unit>>,
-    children: Vec<&'unit Node<'unit>>,
+    tokens: Vec<&'u Token<'u>>,
+    children: Vec<&'u Node<'u>>,
 }
 
-pub struct Unit<'unit> {
-    source: Source<'unit>,
-    template: Template<'unit>,
-    ast: Option<Vec<Node<'unit>>>,
+pub struct Unit<'u> {
+    source: Source<'u>,
+    template: Arc<Template<'u>>,
+    ast: Option<Vec<Node<'u>>>,
 }
 
 
-impl<'unit> Unit<'unit> {
-    pub fn new<'source> (source: Source<'source>) {}
+impl<'u> Unit<'u> {
+    pub fn new (source: Source<'u>, template: Arc<Template<'u>>) -> Unit<'u> {
+        Unit { source, template, ast:None }
+    }
 
-    pub fn parse () {}
+    pub fn parse (&mut self) {
+
+    }
 }
 

@@ -1,48 +1,59 @@
-use tokenizer::token::Token;
-use tokenizer::tokenizer::Source;
+use tokenizer::token::*;
+use tokenizer::tokenizer::*;
+use std::sync::Arc;
 
 
-pub struct Alias<'template> {
-    name: Token<'template>,
+pub struct Alias<'t> {
+    name: &'t Token<'t>,
     token: usize,
 }
 
-pub struct Rule<'template> {
-    name: Token<'template>,
-    variants: Vec<Variant<'template>>,
-    segments: Vec<Segment<'template>>,
+pub struct Rule<'t> {
+    name: &'t Token<'t>,
+    variants: Vec<Variant<'t>>,
+    segments: Vec<Segment<'t>>,
 }
 
-pub struct Variant<'template> {
-    name: Token<'template>,
-    rule: Rule<'template>,
+pub struct Variant<'t> {
+    name: &'t Token<'t>,
+    rule: &'t Rule<'t>,
 
-    tokens: Vec<Token<'template>>,
-    segments: Vec<Segment<'template>>,
-    alias: Vec<Alias<'template>>,
+    tokens: Vec<&'t Token<'t>>,
+    segments: Vec<Segment<'t>>,
+    aliases: Vec<Alias<'t>>,
 }
 
-pub struct Segment<'template> {
-    name: Token<'template>,
+pub struct Segment<'t> {
+    name: &'t Token<'t>,
 
-    variant: Variant<'template>,
-    tokens: Vec<Token<'template>>,
+    variant: &'t Variant<'t>,
+    tokens: Vec<&'t Token<'t>>,
 }
 
-pub struct Path<'template> {
-    variant: Variant<'template>,
-    children: Vec<Path<'template>>,
+pub struct Path<'t> {
+    variant: Variant<'t>,
+    children: Vec<Path<'t>>,
 }
 
-pub struct Template<'template> {
-    source: Source<'template>,
-    rules: Option<Vec<Rule<'template>>>,
+pub struct Template<'t> {
+    pub source: Source<'t>,
+    pub rules: Option<Vec<Rule<'t>>>,
 }
 
 
-impl<'template> Template<'template> {
-    pub fn new<'source> (source: Source<'source>) {}
+impl<'t> Template<'t> {
+    pub fn new (source: Source<'t>) -> Template<'t> {
+        Template { source, rules:None }
+    }
 
-    pub fn parse () {}
+    pub fn parse (&mut self) {
+        let tokens = self.source.tokens.as_ref();
+
+        let mut iter = TokenIterator::new(tokens.unwrap());
+    }
+
+    fn parse_rule () {}
+    fn parse_variant () {}
+    fn parse_segment () {}
 }
 
