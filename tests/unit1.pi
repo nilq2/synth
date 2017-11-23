@@ -1,0 +1,22 @@
+//
+//  Basics for parser
+//
+
+
+mut varA: i32  // declaration
+varA = 10 // assignment
+
+// with initialization
+let varB: i32 = 11
+
+
+if varA == 10
+    print("var is 10")
+
+// declaration
+foo: i32 ()
+
+// implementation
+foo: i32 ()
+    return 5
+

@@ -1,0 +1,14 @@
+mut varA = 10  // init with inference
+
+bar: i32 ()
+    return 100
+
+// with arguments and inference
+sum: (a, b :u32)
+    return a + b
+
+
+// while loop
+while varA > sum(3, 7)
+    varA -= 1
+
