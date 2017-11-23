@@ -12,30 +12,23 @@ pub enum Type {
     EOF,
 }
 
+#[derive(Debug)]
+pub enum PartialToken<'pt> {
+    Type(Type),
+    Lexeme(Option<&'pt str>),
+    Token(Token<'pt>),
+}
+
 #[derive(Debug, PartialEq)]
-pub struct Token<'a> {
+pub struct Token<'t> {
     pub token_type: Type,
     pub line:       usize,
     pub slice:      (usize, usize),
-    pub lexeme:     Option<&'a str>,
-}
-
-#[derive(Debug)]
-pub enum PartialToken<'a> {
-    Type(Type),
-    Lexeme(Option<&'a str>),
-    Token(Token<'a>),
-}
-
-#[derive(Debug)]
-pub struct TokenIterator<'a> {
-    tokens: &'a Vec<Token<'a>>,
-    current: usize,
+    pub lexeme:     Option<&'t str>,
 }
 
 
-
-impl<'a> Token<'a> {
+impl<'t> Token<'t> {
     pub fn new (token_type: Type, line: usize, slice: (usize, usize), lexeme: Option<&str>) -> Token {
         Token { token_type, line, slice, lexeme }
     }
@@ -73,16 +66,23 @@ impl<'a> Token<'a> {
     }
 }
 
-impl<'a> TokenIterator<'a> {
-    pub fn new (tokens: &'a Vec<Token<'a>>) -> TokenIterator<'a> {
+
+#[derive(Debug)]
+pub struct TokenIterator<'ti> {
+    tokens: &'ti Vec<Token<'ti>>,
+    current: usize,
+}
+
+impl<'ti> TokenIterator<'ti> {
+    pub fn new (tokens: &'ti Vec<Token<'ti>>) -> TokenIterator<'ti> {
         TokenIterator { tokens: tokens, current: 0 }
     }
 
-    pub fn get (&self, offset: usize) -> &Token<'a> {
+    pub fn get (&self, offset: usize) -> &Token<'ti> {
         &self.tokens[self.current + offset]
     }
 
-    pub fn next(&mut self) -> &Token<'a> {
+    pub fn next(&mut self) -> &Token<'ti> {
         self.current += 1;
         &self.tokens[self.current - 1]
     }
@@ -92,9 +92,9 @@ impl<'a> TokenIterator<'a> {
 
         for token in tokens {
             if ! match token {
-                &PartialToken::Type(ref t)   => self.get(offset).token_type != *t,
-                &PartialToken::Lexeme(ref l) => self.get(offset).lexeme != *l,
-                &PartialToken::Token(ref tk) => self.get(offset) != tk,
+                &PartialToken::Type(ref t)   => self.get(offset).token_type == *t,
+                &PartialToken::Lexeme(ref l) => self.get(offset).lexeme == *l,
+                &PartialToken::Token(ref tk) => self.get(offset) == tk,
             } {
                 return false
             }

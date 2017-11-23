@@ -4,17 +4,17 @@ use std::str::Chars;
 use super::token::*;
 
 #[derive(Debug)]
-pub struct Source<'source> {
-    pub path:       &'source str,
-    pub lines:      Vec<&'source str>,
-    pub tokens:     Option<Vec<Token<'source>>>,
-    pub directives: Vec<(&'source str, &'source str)>,
+pub struct Source<'s> {
+    pub path:       &'s str,
+    pub lines:      Vec<&'s str>,
+    pub tokens:     Option<Vec<Token<'s>>>,
+    pub directives: Vec<(&'s str, &'s str)>,
 }
 
-impl<'source> Source<'source> {
-    pub fn new<'origin> (
-        path: &'origin str, ctrl_char: Option<&str>, source_lines: &'origin Vec<String>
-    ) -> Source<'origin> {
+impl<'s> Source<'s> {
+    pub fn new<'o> (
+        path: &'o str, ctrl_char: Option<&str>, source_lines: &'o Vec<String>
+    ) -> Source<'o> {
 
         let mut lines: Vec<&str> = Vec::new();
         let mut directives: Vec<(&str, &str)> = Vec::new();
@@ -217,8 +217,8 @@ impl<'source> Source<'source> {
     }
 
     fn matches (
-        &self, first: char, iter: &mut Peekable<Enumerate<Chars>>, delims: &Vec<&'source str>
-    ) -> Option<&'source str> {
+        &self, first: char, iter: &mut Peekable<Enumerate<Chars>>, delims: &Vec<&'s str>
+    ) -> Option<&'s str> {
 
         let mut matched = true;
 
