@@ -22,7 +22,10 @@ fn main() {
         panic!("specify source files after template");
 
     } else if args.len() > 2 {
+        println!("== started ==");
+
         // template -------------------------------------
+        println!("\n== template ==");
         let t_f: File = match File::open(&args[1]) {
             Ok(v) => v,
             Err(_) => panic!("no such file: {}", &args[1]),
@@ -41,10 +44,14 @@ fn main() {
 
 
         // units ----------------------------------------
+        println!("\n== units ==");
+
         let mut unit_iter = args.iter();
         unit_iter.nth(1);
 
         for unit in unit_iter {
+            println!("\n== unit {} ==", &unit);
+
             let u_f: File = match File::open(&unit) {
                 Ok(v) => v,
                 Err(_) => panic!("no such file: {}", &unit),
@@ -65,5 +72,5 @@ fn main() {
         println!("source file not supplied: synth <file>")
     }
 
-    println!(":: finished");
+    println!("\n== finished ==");
 }
