@@ -201,7 +201,7 @@ impl<'s> Source<'s> {
                 tokens.push(Token::newline(l))
             }
 
-            println!("{:5}| {}", l, line)
+            //println!("{:5}| {}", l, line)
         }
 
         if comment != 0 {

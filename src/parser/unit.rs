@@ -5,23 +5,23 @@ use std::sync::Arc;
 
 
 
-pub struct Node<'u> {
-    name: &'u Token<'u>,
-    variant: &'u Variant<'u>,
+pub struct Node<'u, 't: 'u> {
+    name: &'u Token<'t>,
+    variant: &'u Variant<'u, 't>,
 
-    tokens: Vec<&'u Token<'u>>,
-    children: Vec<&'u Node<'u>>,
+    tokens: Vec<&'u Token<'t>>,
+    children: Vec<&'u Node<'u, 't>>,
 }
 
-pub struct Unit<'u> {
-    source: Source<'u>,
-    template: Arc<Template<'u>>,
-    ast: Option<Vec<Node<'u>>>,
+pub struct Unit<'u, 's: 'u, 't: 'u> {
+    source: &'u Source<'s>,
+    template: Arc<Template<'t, 't>>,
+    ast: Option<Vec<Node<'u, 's>>>,
 }
 
 
-impl<'u> Unit<'u> {
-    pub fn new (source: Source<'u>, template: Arc<Template<'u>>) -> Unit<'u> {
+impl<'u, 's, 't> Unit<'u, 's, 't> {
+    pub fn new (source: &'u Source<'s>, template: Arc<Template<'t, 't>>) -> Unit<'u, 's, 't>  {
         Unit { source, template, ast:None }
     }
 

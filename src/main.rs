@@ -34,7 +34,7 @@ fn main() {
         let mut t_src = Source::new(&args[1], Some("//!"), &t_lines);
         t_src.tokenize();
 
-        let mut t = template::Template::new(t_src);
+        let mut t = template::Template::new(&t_src);
         t.parse();
 
         let t_arc = Arc::new(t);
@@ -57,11 +57,13 @@ fn main() {
             u_src.directives = t_arc.source.directives.clone();
             u_src.tokenize();
 
-            let mut u = unit::Unit::new(u_src, t_arc.clone());
+            let mut u = unit::Unit::new(&u_src, t_arc.clone());
             u.parse();
         }
 
     } else {
         println!("source file not supplied: synth <file>")
     }
+
+    println!(":: finished");
 }
