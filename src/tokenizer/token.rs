@@ -12,11 +12,30 @@ pub enum Type {
     EOF,
 }
 
+impl Type {
+     pub fn from_str (s: &str) -> Option<Self> {
+        match s {
+            "Number" | "NUMBER" => Some(Type::Number),
+            "String" | "STRING" => Some(Type::String),
+            "Symbol" | "SYMBOL" => Some(Type::Symbol),
+            "Word"   | "WORD"   => Some(Type::Word),
+
+            "Indent" | "INDENT" => Some(Type::Indent),
+            "Dedent" | "DEDENT" => Some(Type::Dedent),
+
+            "EOL" => Some(Type::EOL),
+            "EOF" => Some(Type::EOF),
+
+            _ => None,
+        }
+    }
+}
+
 #[derive(Debug)]
-pub enum PartialToken<'pt> {
+pub enum PartialToken<'s> {
     Type(Type),
-    Lexeme(&'pt str),
-    Token(Token<'pt>),
+    Lexeme(&'s str),
+    Pair(Type, &'s str),
 }
 
 #[derive(Debug, PartialEq)]
@@ -70,7 +89,7 @@ impl<'t> Token<'t> {
 #[derive(Debug)]
 pub struct TokenIterator<'t, 's: 't> {
     tokens: &'t Vec<Token<'s>>,
-    current: usize,
+    pub current: usize,
 }
 
 impl<'t, 's: 't> TokenIterator<'t, 's> {
@@ -104,7 +123,7 @@ impl<'t, 's: 't> TokenIterator<'t, 's> {
     }
 
     pub fn check(&self, tokens: &[PartialToken]) -> bool {
-        if tokens.len() + self.current >= self.tokens.len() {
+        if tokens.len() + self.current > self.tokens.len() {
             return false
         }
 
@@ -116,8 +135,10 @@ impl<'t, 's: 't> TokenIterator<'t, 's> {
                     self.get(offset).unwrap().token_type == *t,
                 &PartialToken::Lexeme(ref l) =>
                     self.get(offset).unwrap().lexeme == Some(*l),
-                &PartialToken::Token(ref tk) =>
-                    self.get(offset).unwrap() == tk,
+                &PartialToken::Pair(ref t, ref l) => {
+                    let tk = self.get(offset).unwrap();
+                    tk.lexeme == Some(*l) && tk.token_type == *t
+                },
             } {
                 return false
             }
