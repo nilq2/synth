@@ -9,16 +9,16 @@ function:
 
 params:
     begin := name:WORD type:type , para:params
-        [generate]
+        [output]
             :type :name , :para
 
     last := name:WORD type:type
-        [generate]
+        [output]
             :type :name
 
 type:
     t := \: name:WORD
-        [generate]
+        [output]
             :name
 
 newline:
