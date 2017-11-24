@@ -12,9 +12,7 @@ pub struct Source<'s> {
 }
 
 impl<'s> Source<'s> {
-    pub fn new<'o> (
-        path: &'o str, ctrl_char: Option<&str>, source_lines: &'o Vec<String>
-    ) -> Source<'o> {
+    pub fn new (path: &'s str, ctrl_char: Option<&str>, source_lines: &'s Vec<String>) -> Self {
 
         let mut lines: Vec<&str> = Vec::new();
         let mut directives: Vec<(&str, &str)> = Vec::new();
@@ -39,7 +37,7 @@ impl<'s> Source<'s> {
             }
         }
 
-        Source {
+        Self {
             path:       path,
             lines:      lines,
             tokens:     None,

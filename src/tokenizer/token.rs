@@ -93,8 +93,8 @@ pub struct TokenIterator<'t, 's: 't> {
 }
 
 impl<'t, 's: 't> TokenIterator<'t, 's> {
-    pub fn new (tokens: &'t Vec<Token<'s>>) -> TokenIterator<'t, 's> {
-        TokenIterator { tokens: tokens, current: 0 }
+    pub fn new (tokens: &'t Vec<Token<'s>>) -> Self {
+        Self { tokens: tokens, current: 0 }
     }
 
     pub fn get (&self, offset: usize) -> Option<&'t Token<'s>> {
