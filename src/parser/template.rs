@@ -2,35 +2,9 @@ use tokenizer::token::{Type, Token, TokenIterator};
 use tokenizer::token::PartialToken::*;
 use tokenizer::token::Type::*;
 use tokenizer::tokenizer::*;
+use rule::*;
+use alias::*;
 
-
-pub struct Alias<'t, 's: 't> {
-    name: &'t Token<'s>,
-    token: usize,
-}
-
-pub struct Rule<'t, 's: 't> {
-    name: &'t Token<'s>,
-    variants: Vec<Variant<'t, 's>>,
-    segments: Vec<Segment<'t, 's>>,
-}
-
-pub struct Variant<'t, 's: 't> {
-    name: &'t Token<'s>,
-    tokens: Vec<&'t Token<'s>>,
-    segments: Vec<Segment<'t, 's>>,
-    aliases: Vec<Alias<'t, 's>>,
-}
-
-pub struct Segment<'t, 's: 't> {
-    name: &'t Token<'s>,
-    tokens: Vec<&'t Token<'s>>,
-}
-
-pub struct Path<'t, 's: 't> {
-    variant: Variant<'t, 's>,
-    children: Vec<Path<'t, 's>>,
-}
 
 pub struct Template<'t, 's: 't> {
     pub source: &'t Source<'s>,
@@ -39,8 +13,8 @@ pub struct Template<'t, 's: 't> {
 
 
 impl<'t, 's: 't> Template<'t, 's> {
-    pub fn new (source: &'t Source<'s>) -> Template<'t, 's> {
-        Template { source, rules:None }
+    pub fn new (source: &'t Source<'s>) -> Self {
+        Self { source, rules:None }
     }
 
     pub fn parse (&mut self) {
@@ -81,7 +55,7 @@ impl<'t, 's: 't> Template<'t, 's> {
             }
         }
 
-        Rule { name, segments, variants }
+        Rule::new ( name, variants, segments )
     }
 
     fn parse_variant (&mut self, mut iter: &mut TokenIterator<'t, 's>) -> Variant<'t, 's> {
@@ -113,7 +87,7 @@ impl<'t, 's: 't> Template<'t, 's> {
                     panic!("undefined type");
                 }
 
-                aliases.push(Alias { name: alias_name, token: tokens.len() });
+                aliases.push(Alias::new(alias_name, tokens.len()));
             }
 
             tokens.push(iter.next().unwrap());
@@ -131,10 +105,10 @@ impl<'t, 's: 't> Template<'t, 's> {
             }
         }
 
-        Variant { name, segments, aliases, tokens }
+        Variant::new ( name, tokens, segments, aliases )
     }
 
-    fn parse_segment (&mut self, mut iter: &mut TokenIterator<'t, 's>) -> Segment<'t, 's> {
+    fn parse_segment (&mut self, iter: &mut TokenIterator<'t, 's>) -> Segment<'t, 's> {
         let name = iter.get(1).unwrap();
         iter.eat(3);
 
@@ -161,6 +135,6 @@ impl<'t, 's: 't> Template<'t, 's> {
 
         iter.next();
 
-        Segment { name, tokens }
+        Segment::new ( name, tokens )
     }
 }

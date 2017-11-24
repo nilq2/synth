@@ -1,6 +1,8 @@
 use tokenizer::token::Token;
 use tokenizer::tokenizer::Source;
 use template::*;
+use rule::*;
+use alias::*;
 use std::sync::Arc;
 
 
@@ -13,6 +15,11 @@ pub struct Node<'u, 't: 'u> {
     children: Vec<&'u Node<'u, 't>>,
 }
 
+pub struct Path<'t, 's: 't> {
+    variant: Variant<'t, 's>,
+    children: Vec<Path<'t, 's>>,
+}
+
 pub struct Unit<'u, 's: 'u, 't: 'u> {
     source: &'u Source<'s>,
     template: Arc<Template<'t, 't>>,
@@ -21,8 +28,8 @@ pub struct Unit<'u, 's: 'u, 't: 'u> {
 
 
 impl<'u, 's, 't> Unit<'u, 's, 't> {
-    pub fn new (source: &'u Source<'s>, template: Arc<Template<'t, 't>>) -> Unit<'u, 's, 't>  {
-        Unit { source, template, ast:None }
+    pub fn new (source: &'u Source<'s>, template: Arc<Template<'t, 't>>) -> Self  {
+        Self { source, template, ast:None }
     }
 
     pub fn parse (&mut self) {
