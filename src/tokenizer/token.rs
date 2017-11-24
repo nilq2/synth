@@ -68,17 +68,17 @@ impl<'t> Token<'t> {
 
 
 #[derive(Debug)]
-pub struct TokenIterator<'t> {
-    tokens: &'t Vec<Token<'t>>,
+pub struct TokenIterator<'t, 's: 't> {
+    tokens: &'t Vec<Token<'s>>,
     current: usize,
 }
 
-impl<'t> TokenIterator<'t> {
-    pub fn new (tokens: &'t Vec<Token<'t>>) -> TokenIterator<'t> {
+impl<'t, 's: 't> TokenIterator<'t, 's> {
+    pub fn new (tokens: &'t Vec<Token<'s>>) -> TokenIterator<'t, 's> {
         TokenIterator { tokens: tokens, current: 0 }
     }
 
-    pub fn get (&self, offset: usize) -> Option<&'t Token<'t>> {
+    pub fn get (&self, offset: usize) -> Option<&'t Token<'s>> {
         if offset + self.current >= self.tokens.len() {
             None
         } else {
@@ -94,7 +94,7 @@ impl<'t> TokenIterator<'t> {
         }
     }
 
-    pub fn next(&mut self) -> Option<&'t Token<'t>> {
+    pub fn next(&mut self) -> Option<&'t Token<'s>> {
         if self.current >= self.tokens.len() {
             None
         } else {

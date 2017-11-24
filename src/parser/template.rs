@@ -44,11 +44,10 @@ impl<'t, 's: 't> Template<'t, 's> {
     }
 
     pub fn parse (&mut self) {
-        let tokens: &'t Vec<Token<'s>> = &self.source.tokens.unwrap();
+        let tokens = self.source.tokens.as_ref().unwrap();
 
-        let mut iter = TokenIterator::new(&tokens);
-
-        let mut rules: Vec<Rule<'t, 's>> = Vec::new();
+        let mut iter = TokenIterator::new(tokens);
+        let mut rules = Vec::new();
 
         while iter.get(0) != None {
             if iter.check(&[Type(Word), Lexeme(":"), Type(EOL)]) {
@@ -60,7 +59,7 @@ impl<'t, 's: 't> Template<'t, 's> {
         self.rules = Some(rules);
     }
 
-    fn parse_rule (&mut self, iter: &'s mut TokenIterator) -> Rule<'t, 's> {
+    fn parse_rule (&mut self, mut iter: &mut TokenIterator<'t, 's>) -> Rule<'t, 's> {
         let name = iter.get(0).unwrap();
         iter.eat(3);
 
@@ -82,7 +81,7 @@ impl<'t, 's: 't> Template<'t, 's> {
         Rule { name, segments, variants }
     }
 
-    fn parse_variant (&mut self, iter: &'s mut TokenIterator) -> Variant<'t, 's> {
+    fn parse_variant (&mut self, iter: &mut TokenIterator<'t, 's>) -> Variant<'t, 's> {
         let name = iter.get(0).unwrap();
         iter.eat(3);
 
@@ -97,7 +96,7 @@ impl<'t, 's: 't> Template<'t, 's> {
         Variant { name, segments, aliases, tokens }
     }
 
-    fn parse_segment (&mut self, iter: &'s mut TokenIterator) -> Segment<'t, 's> {
+    fn parse_segment (&mut self, iter: &mut TokenIterator<'t, 's>) -> Segment<'t, 's> {
         let name = iter.get(1).unwrap();
         iter.eat(3);
 
@@ -110,4 +109,3 @@ impl<'t, 's: 't> Template<'t, 's> {
         Segment { name, tokens }
     }
 }
-
