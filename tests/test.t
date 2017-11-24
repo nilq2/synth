@@ -4,7 +4,7 @@
 
 function:
     decl := name:WORD ( para:params ) type:type
-        [generate]
+        [output]
             :type :name ( :para )
 
 params:
