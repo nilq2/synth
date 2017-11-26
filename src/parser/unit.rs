@@ -9,30 +9,30 @@ use std::sync::Arc;
 
 
 #[derive(Debug)]
-pub struct Node<'u, 't: 'u, 'ts: 't> {
-    name: &'u Token<'t>,
-    variant: &'u Variant<'t, 'ts>,
+pub struct Node<'u> {
+    name: &'u Token<'u>,
+    variant: &'u Variant<'u,'u>,
 
-    tokens: Vec<&'u Token<'t>>,
-    children: Vec<&'u Node<'u, 't, 'ts>>,
+    tokens: Vec<&'u Token<'u>>,
+    children: Vec<&'u Node<'u>>,
 }
 
 #[derive(Debug)]
-pub struct Path<'u, 't: 'u, 'ts: 't> {
-    variant: &'u Variant<'t, 'ts>,
-    children: Vec<Path<'u, 't, 'ts>>,
+pub struct Path<'u> {
+    variant: &'u Variant<'u,'u>,
+    children: Vec<Path<'u>>,
 }
 
 #[derive(Debug)]
-pub struct Unit<'u, 's: 'u, 't: 'u, 'ts: 't> {
-    source: &'u Source<'s>,
-    template: Arc<Template<'t, 'ts>>,
-    ast: Option<Vec<Node<'u, 't, 'ts>>>,
+pub struct Unit<'u> {
+    source: &'u Source<'u>,
+    template: Arc<Template<'u,'u>>,
+    ast: Option<Vec<Node<'u>>>,
 }
 
 
-impl<'u, 's: 'u, 't: 'u, 'ts: 't> Unit<'u, 's, 't, 'ts> {
-    pub fn new (source: &'u Source<'s>, template: Arc<Template<'t, 'ts>>) -> Self  {
+impl<'u> Unit<'u> {
+    pub fn new<'s, 't> (source: &'u Source<'s>, template: Arc<Template<'u,'t>>) -> Self  {
         Self { source, template, ast:None }
     }
 
@@ -64,8 +64,8 @@ impl<'u, 's: 'u, 't: 'u, 'ts: 't> Unit<'u, 's, 't, 'ts> {
     }
 
     fn check_rule (
-        &self, mut source: &mut TokenIterator, rule: &'u Rule<'t, 'ts>
-    ) -> Option<Path<'u, 't, 'ts>> {
+        &self, mut source: &mut TokenIterator, rule: &'u Rule<'u, 'u>
+    ) -> Option<Path> {
         for variant in &rule.variants {
             if let Some(path) = self.check_variant(&mut source, variant) {
                 return Some(path)
@@ -76,12 +76,12 @@ impl<'u, 's: 'u, 't: 'u, 'ts: 't> Unit<'u, 's, 't, 'ts> {
     }
 
     fn check_variant (
-        &self, mut source: &mut TokenIterator, variant: &'u Variant<'t, 'ts>
-    ) -> Option<Path<'u, 't, 'ts>> {
+        &self, mut source: &mut TokenIterator, variant: &'u Variant<'u,'u>
+    ) -> Option<Path> {
         let aliases = &variant.aliases;
         let tokens = &variant.tokens;
 
-        let mut children: Vec<Path<'u, 't, 'ts>> = Vec::new();
+        let mut children: Vec<Path> = Vec::new();
 
         let reset = source.current;
         let mut alias = 0;
@@ -131,7 +131,7 @@ impl<'u, 's: 'u, 't: 'u, 'ts: 't> Unit<'u, 's, 't, 'ts> {
         Some(Path{ variant: variant, children: children })
     }
 
-    fn parse_path (&self, mut source: &mut TokenIterator, path: &Path<'u, 't, 's>) {
+    fn parse_path (&self, mut source: &mut TokenIterator, path: &Path) {
 
     }
 }
