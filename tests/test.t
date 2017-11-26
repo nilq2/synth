@@ -2,24 +2,27 @@
 //!string " '
 
 
-function:
-    decl := name:WORD ( para:params ) type:type
-        [output]
-            :type :name ( :para )
+variable:
+    linit := let v:WORD \: WORD = t:term EOL
+    minit := mut WORD \: WORD = t:term EOL
+    let := let WORD \: WORD EOL
+    mut := mut WORD \: WORD EOL
 
-params:
-    begin := name:WORD type:type , para:params
-        [output]
-            :type :name , :para
+if:
+    if := if WORD == NUMBER EOL
 
-    last := name:WORD type:type
-        [output]
-            :type :name
+func:
+    call := WORD ( t:term )
+    decl := WORD \: WORD ()
+    def := WORD \: WORD () INDENT
 
-type:
-    t := \: name:WORD
-        [output]
-            :name
+return:
+    ret := return t:term
 
-newline:
-    newl := NEWLINE
+term:
+    number := NUMBER
+    word := WORD
+    string := STRING
+
+eol:
+    eol := EOL
