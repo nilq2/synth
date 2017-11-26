@@ -1,5 +1,5 @@
-//!comment /* */ //
-//!string " '
+!/def/comment /* */ //
+!/def/string " '
 
 
 variable:

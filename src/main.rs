@@ -34,7 +34,7 @@ fn main() {
         let t_raw  = BufReader::new(&t_f);
         let t_lines = t_raw.lines().map(|x| x.unwrap()).collect();
 
-        let mut t_src = Source::new(&args[1], Some("//!"), &t_lines);
+        let mut t_src = Source::new(&args[1], Some("!/def/"), &t_lines);
         t_src.tokenize();
 
         let mut t = template::Template::new(&t_src);
