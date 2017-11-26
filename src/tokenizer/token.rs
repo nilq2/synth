@@ -31,7 +31,7 @@ impl Type {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum PartialToken<'s> {
     Type(Type),
     Lexeme(&'s str),
@@ -44,6 +44,26 @@ pub struct Token<'t> {
     pub line:       usize,
     pub slice:      (usize, usize),
     pub lexeme:     Option<&'t str>,
+}
+
+impl<'t> PartialEq<PartialToken<'t>> for Token<'t> {
+    fn eq (&self, rhs: &PartialToken<'t>) -> bool {
+        match *rhs {
+            PartialToken::Type(ref t)   =>
+                self.token_type == *t,
+            PartialToken::Lexeme(ref l) =>
+                self.lexeme == Some(*l),
+            PartialToken::Pair(ref t, ref l) => {
+                self.lexeme == Some(*l) && self.token_type == *t
+            },
+        }
+    }
+}
+
+impl<'t> PartialEq<Token<'t>> for PartialToken<'t> {
+    fn eq (&self, rhs: &Token<'t>) -> bool {
+        rhs == self
+    }
 }
 
 
@@ -130,16 +150,7 @@ impl<'t, 's: 't> TokenIterator<'t, 's> {
         let mut offset = 0;
 
         for token in tokens {
-            if ! match token {
-                &PartialToken::Type(ref t)   =>
-                    self.get(offset).unwrap().token_type == *t,
-                &PartialToken::Lexeme(ref l) =>
-                    self.get(offset).unwrap().lexeme == Some(*l),
-                &PartialToken::Pair(ref t, ref l) => {
-                    let tk = self.get(offset).unwrap();
-                    tk.lexeme == Some(*l) && tk.token_type == *t
-                },
-            } {
+            if token != self.get(offset).unwrap() {
                 return false
             }
 

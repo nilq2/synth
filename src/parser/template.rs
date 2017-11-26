@@ -6,6 +6,7 @@ use rule::*;
 use alias::*;
 
 
+#[derive(Debug)]
 pub struct Template<'t, 's: 't> {
     pub source: &'t Source<'s>,
     pub rules: Option<Vec<Rule<'t, 's>>>,
