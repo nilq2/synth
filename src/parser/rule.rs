@@ -4,6 +4,7 @@ use alias::Alias;
 #[derive(Debug)]
 pub struct Rule<'t, 's: 't> {
     pub name: &'t Token<'s>,
+    pub is_matching: bool,
     pub variants: Vec<Variant<'t, 's>>,
     pub segments: Vec<Segment<'t, 's>>,
 }
@@ -25,8 +26,8 @@ pub struct Segment<'t, 's: 't> {
 
 
 impl<'t, 's: 't> Rule<'t, 's> {
-    pub fn new (name: &'t Token<'s>, variants: Vec<Variant<'t, 's>>, segments: Vec<Segment<'t, 's>>) -> Self {
-        Self { name, variants, segments }
+    pub fn new (name: &'t Token<'s>, is_matching: bool, variants: Vec<Variant<'t, 's>>, segments: Vec<Segment<'t, 's>>) -> Self {
+        Self { name, is_matching, variants, segments }
     }
 
     pub fn variant (&self, name: &str) -> Option<&Variant<'t, 's>> {

@@ -25,7 +25,8 @@ impl<'t, 's: 't> Template<'t, 's> {
         let mut rules = Vec::new();
 
         while !iter.match_with(&[Type(EOF)]) {
-            if iter.check(&[Type(Word), Lexeme(":"), Type(EOL)]) {
+            if iter.check(&[Type(Word), Pair(Symbol, ":"), Type(EOL)])
+            || iter.check(&[Type(Word), Pair(Symbol, "!"), Type(EOL)]) {
                 rules.push(self.parse_rule(&mut iter));
             }
             //iter.next();
@@ -35,8 +36,9 @@ impl<'t, 's: 't> Template<'t, 's> {
     }
 
     fn parse_rule (&mut self, mut iter: &mut TokenIterator<'t, 's>) -> Rule<'t, 's> {
-        let name = iter.get(0).unwrap();
-        iter.eat(3);
+        let name = iter.next().unwrap();
+        let is_matching = iter.check(&[Pair(Symbol, ":")]);
+        iter.eat(2);
 
         let mut segments: Vec<Segment<'t, 's>> = Vec::new();
         let mut variants: Vec<Variant<'t, 's>> = Vec::new();
@@ -56,7 +58,7 @@ impl<'t, 's: 't> Template<'t, 's> {
             }
         }
 
-        Rule::new ( name, variants, segments )
+        Rule::new ( name, is_matching, variants, segments )
     }
 
     fn parse_variant (&mut self, mut iter: &mut TokenIterator<'t, 's>) -> Variant<'t, 's> {
@@ -87,6 +89,8 @@ impl<'t, 's: 't> Template<'t, 's> {
                 if elem.to_string().to_uppercase() == elem.to_string() && Type::from_str(elem) == None {
                     panic!("undefined type");
                 }
+
+                //println!("   {}:{}", alias_name.lexeme.unwrap(), elem);
 
                 aliases.push(Alias::new(alias_name, tokens.len()));
             }

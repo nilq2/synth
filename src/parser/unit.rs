@@ -31,6 +31,15 @@ pub struct Unit<'u> {
 }
 
 
+fn dump_path(path: &Path) {
+    print!("{}", path.variant.name.lexeme.unwrap());
+    for path in path.children.iter() {
+        print!(" -> ");
+        dump_path(&path);
+    }
+}
+
+
 impl<'u> Unit<'u> {
     pub fn new<'s, 't> (source: &'u Source<'s>, template: Arc<Template<'u,'t>>) -> Self  {
         Self { source, template, ast:None }
@@ -48,18 +57,30 @@ impl<'u> Unit<'u> {
             let mut path: Option<Path> = None;
 
             for rule in self.template.rules.as_ref().unwrap().iter() {
-                path = self.check_rule(&mut source, &rule);
-                println!("");
-                if let Some(ref p) = path {
-                    break
+                if rule.is_matching {
+                    path = self.check_rule(&mut source, &rule);
+                    if let Some(ref p) = path {
+                        break
+                    }
                 }
             }
 
             if let None = path {
+                if source.get(0).unwrap() == &Type(Type::EOF) {
+                    break
+                }
                 panic!("no path matches at token {:?}", source.get(0));
             }
 
+            println!("   ++ matched {}\n", path.as_ref().unwrap().variant.name.lexeme.unwrap());
             paths.push(path.unwrap());
+        }
+
+        print!("\n:: PATHS ::\n   ");
+
+        for path in paths.iter() {
+            dump_path(&path);
+            print!("\n   ");
         }
     }
 
@@ -68,9 +89,11 @@ impl<'u> Unit<'u> {
     ) -> Option<Path> {
         for variant in &rule.variants {
             if let Some(path) = self.check_variant(&mut source, variant) {
+                println!("");
                 return Some(path)
             }
         }
+        println!("");
 
         None
     }
@@ -78,6 +101,8 @@ impl<'u> Unit<'u> {
     fn check_variant (
         &self, mut source: &mut TokenIterator, variant: &'u Variant<'u,'u>
     ) -> Option<Path> {
+        println!("?? checking {}", &variant.name.lexeme.unwrap());
+
         let aliases = &variant.aliases;
         let tokens = &variant.tokens;
 
@@ -88,7 +113,7 @@ impl<'u> Unit<'u> {
         let mut index = 0;
 
         while index < tokens.len() {
-            println!("{:?}", &tokens[index]);
+            //println!("{:?}", &tokens[index]);
 
             if tokens[index].lexeme.unwrap() == "\\" {
                 index += 1;
@@ -96,13 +121,15 @@ impl<'u> Unit<'u> {
 
             if alias < aliases.len() && index == aliases[alias].token {
                 if tokens[index].lexeme.unwrap().to_uppercase() == tokens[index].lexeme.unwrap() {
-                    if source.get(index).unwrap()
+                    if source.get(0).unwrap()
                     != &Type(Type::from_str(tokens[index].lexeme.unwrap()).unwrap()) {
+                        //println!("   -- didn't match type {}", tokens[index].lexeme.unwrap());
                         source.current = reset;
                         return None
 
                     } else {
                         index += 1;
+                        source.next();
                     }
 
                 } else {
@@ -113,21 +140,58 @@ impl<'u> Unit<'u> {
                         .find(|&r| r.name.lexeme == tokens[index].lexeme)
                         .unwrap();
 
-                    println!("{:?}", recurse);
+                    //println!("   @@ {:?}", recurse.name);
 
+                    //source.eat(index);
                     let rule = self.check_rule(&mut source, recurse);
 
                     if let Some(r) = rule {
+                        index += 1;
                         children.push(r);
 
                     } else {
+                        //println!("   -- didn't match rule {}", recurse.name.lexeme.unwrap());
                         source.current = reset;
                         return None
                     }
                 }
+                alias += 1;
+
+            } else {
+
+                println!("   !! {:?} {}", tokens[index].lexeme, source.get(0).unwrap().lexeme.unwrap_or(
+                   &source.get(0).unwrap().token_type.to_str()
+                ));
+                //*/
+                if tokens[index].token_type == Word
+                && tokens[index].lexeme.unwrap().to_uppercase() == tokens[index].lexeme.unwrap() {
+                    if source.get(0).unwrap()
+                    != &Type(Type::from_str(tokens[index].lexeme.unwrap()).unwrap()) {
+                        //println!("   -- didn't match type {}", tokens[index].lexeme.unwrap());
+                        source.current = reset;
+                        return None
+                    }
+
+                } else if source.get(0).unwrap()
+                != &Lexeme(tokens[index].lexeme.unwrap()) {
+                    /*
+                    println!("   -- didn't match token {} at {}",
+                        tokens[index].lexeme.unwrap(),
+                        &source.get(0).unwrap().lexeme.unwrap_or(
+                            &source.get(0).unwrap().token_type.to_str()
+                        )
+                    );
+                    */
+                    source.current = reset;
+                    return None
+                }
+
+                index += 1;
+                source.next();
             }
         }
 
+        //source.eat(index);
         Some(Path{ variant: variant, children: children })
     }
 

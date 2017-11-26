@@ -1,7 +1,8 @@
 use std::iter::{Peekable, Enumerate};
 use std::str::Chars;
 
-use super::token::*;
+use super::token::{Type as T, Token, PartialToken};
+use self::PartialToken::{Type, Lexeme, Pair};
 
 #[derive(Debug)]
 pub struct Source<'s> {
@@ -195,7 +196,9 @@ impl<'s> Source<'s> {
                 }
             }
 
-            if comment == 0 && tokens.last().map(|t| t.token_type != Type::EOL).unwrap_or(false) {
+            if comment == 0 && tokens.last().map(
+                |t| t != &Type(T::EOL) && t != &Type(T::Dedent)
+            ).unwrap_or(false) {
                 tokens.push(Token::newline(l))
             }
 

@@ -10,5 +10,5 @@ sum: (a, b :u32)
 
 // while loop
 while varA > sum(3, 7)
-    varA -= 1
+    varA = varA - 1
 

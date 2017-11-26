@@ -14,19 +14,36 @@ pub enum Type {
 
 impl Type {
      pub fn from_str (s: &str) -> Option<Self> {
-        match s {
-            "Number" | "NUMBER" => Some(Type::Number),
-            "String" | "STRING" => Some(Type::String),
-            "Symbol" | "SYMBOL" => Some(Type::Symbol),
-            "Word"   | "WORD"   => Some(Type::Word),
+        match &*s.to_uppercase() {
+            "NUMBER" => Some(Type::Number),
+            "STRING" => Some(Type::String),
+            "SYMBOL" => Some(Type::Symbol),
+            "WORD"   => Some(Type::Word),
 
-            "Indent" | "INDENT" => Some(Type::Indent),
-            "Dedent" | "DEDENT" => Some(Type::Dedent),
+            "INDENT" => Some(Type::Indent),
+            "DEDENT" => Some(Type::Dedent),
 
             "EOL" => Some(Type::EOL),
             "EOF" => Some(Type::EOF),
 
             _ => None,
+        }
+    }
+
+    pub fn to_str<'a> (&self) -> &'a str {
+        match *self {
+            Type::Number => "Number",
+            Type::String => "String",
+            Type::Symbol => "Symbol",
+            Type::Word => "Word",
+
+            Type::Indent => "Indent",
+            Type::Dedent => "Dedent",
+
+            Type::EOL => "EOL",
+            Type::EOF => "EOF",
+
+            _ => "None",
         }
     }
 }
