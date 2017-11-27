@@ -1,4 +1,5 @@
 use tokenizer::token::Token;
+use template::Template;
 use alias::Alias;
 
 #[derive(Debug)]
@@ -12,6 +13,8 @@ pub struct Rule<'t, 's: 't> {
 #[derive(Debug)]
 pub struct Variant<'t, 's: 't> {
     pub name: &'t Token<'s>,
+    pub rule: &'t str,
+
     pub tokens: Vec<&'t Token<'s>>,
     pub segments: Vec<Segment<'t, 's>>,
     pub aliases: Vec<Alias<'t, 's>>,
@@ -20,13 +23,22 @@ pub struct Variant<'t, 's: 't> {
 #[derive(Debug)]
 pub struct Segment<'t, 's: 't> {
     pub name: &'t Token<'s>,
+
+    pub rule: &'t str,
+    pub variant: Option<&'t str>,
+
     pub tokens: Vec<&'t Token<'s>>,
 }
 
 
 
 impl<'t, 's: 't> Rule<'t, 's> {
-    pub fn new (name: &'t Token<'s>, is_matching: bool, variants: Vec<Variant<'t, 's>>, segments: Vec<Segment<'t, 's>>) -> Self {
+    pub fn new (
+        name: &'t Token<'s>,
+        is_matching: bool,
+        variants: Vec<Variant<'t, 's>>,
+        segments: Vec<Segment<'t, 's>>
+    ) -> Self {
         Self { name, is_matching, variants, segments }
     }
 
@@ -54,11 +66,12 @@ impl<'t, 's: 't> Rule<'t, 's> {
 impl<'t, 's: 't> Variant<'t, 's> {
     pub fn new (
         name: &'t Token<'s>,
+        rule: &'t str,
         tokens: Vec<&'t Token<'s>>,
         segments: Vec<Segment<'t, 's>>,
         aliases: Vec<Alias<'t, 's>>
     ) -> Self {
-        Self { name, tokens, segments, aliases }
+        Self { name, rule, tokens, segments, aliases }
     }
 
     pub fn segment (&self, name: &str) -> Option<&Segment<'t, 's>> {
@@ -70,11 +83,32 @@ impl<'t, 's: 't> Variant<'t, 's> {
 
         None
     }
+
+    pub fn rule (&self, template: &'t Template) -> &Rule {
+        template.find_rule(&self.rule).unwrap()
+    }
 }
 
 impl<'t, 's: 't> Segment<'t, 's> {
-    pub fn new (name: &'t Token<'s>, tokens: Vec<&'t Token<'s>>) -> Self {
-        Self { name, tokens }
+    pub fn new (
+        name: &'t Token<'s>,
+        rule: &'t str,
+        variant: Option<&'t str>,
+        tokens: Vec<&'t Token<'s>>
+    ) -> Self {
+        Self { name, rule, variant, tokens }
+    }
+
+    pub fn rule (&self, template: &'t Template) -> &Rule {
+        template.find_rule(&self.rule).unwrap()
+    }
+
+    pub fn variant (&self, template: &'t Template) -> Option<&Variant> {
+        if self.variant != None {
+            Some(self.rule(&template).variant(self.variant.unwrap()).unwrap())
+        } else {
+            None
+        }
     }
 }
 
