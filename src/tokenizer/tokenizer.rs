@@ -2,7 +2,7 @@ use std::iter::{Peekable, Enumerate};
 use std::str::Chars;
 
 use super::token::{Type as T, Token, PartialToken};
-use self::PartialToken::{Type, Lexeme, Pair};
+use self::PartialToken::{Type};
 
 #[derive(Debug)]
 pub struct Source<'s> {
@@ -81,6 +81,7 @@ impl<'s> Source<'s> {
                 for delim in comment_delim.split_whitespace() {
                     comment_d.push(delim);
                 }
+
                 if comment_d.len() > 3 {
                     panic!("too many comment delimiters are defined at line {}", l);
                 }
@@ -159,6 +160,7 @@ impl<'s> Source<'s> {
                                 2 => { // block
                                     if comment_d[1] == delim {
                                         panic!("unexpected block comment terminator at line {}", l)
+
                                     } else {
                                         comment = l // block comment
                                     }
@@ -167,6 +169,7 @@ impl<'s> Source<'s> {
                                 3 => { // block and single line
                                     if comment_d[1] == delim {
                                         panic!("unexpected block comment terminator at line {}", l)
+
                                     } else if comment_d[0] == delim {
                                         comment = l; // block comment
                                         break

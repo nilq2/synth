@@ -3,18 +3,18 @@
 
 
 variable:
-    leti := let WORD \: WORD = t:term EOL
-    letiinf := let WORD = t:term EOL
-    let := let WORD \: WORD EOL
-    letinf := let WORD EOL
+    leti := let name:WORD \: type:WORD = e:expr EOL
+    letiinf := let name:WORD = e:expr EOL
+    let := let name:WORD \: type:WORD EOL
+    letinf := let name:WORD EOL
 
-    mutiinf := mut WORD = t:term EOL
-    muti := mut WORD \: WORD = t:term EOL
-    mut := mut WORD \: WORD EOL
-    mutinf := mut WORD EOL
+    mutiinf := mut name:WORD = e:expr EOL
+    muti := mut name:WORD \: type:WORD = e:expr EOL
+    mut := mut name:WORD \: type:WORD EOL
+    mutinf := mut name:WORD EOL
 
 assign:
-    assign := WORD = e:expr EOL
+    assign := name:WORD = e:expr EOL
 
 op!
     equ := ==
@@ -30,36 +30,36 @@ if:
     if := if e:expr EOL INDENT
 
 func:
-    fdef := WORD \: WORD ( p:pars ) EOL INDENT
-    fdefinf := WORD \: ( p:pars ) EOL INDENT
-    fdefv := WORD \: WORD () EOL INDENT
+    fdef := fname:WORD \: type:WORD ( p:pars ) EOL INDENT
+    fdefinf := fname:WORD \: ( p:pars ) EOL INDENT
+    fdefv := fname:WORD \: type:WORD () EOL INDENT
 
-    fdec := WORD \: WORD ( p:pars ) EOL
-    fdecv := WORD \: WORD () EOL
+    fdec := fname:WORD \: type:WORD ( p:pars ) EOL
+    fdecv := fname:WORD \: type:WORD () EOL
 
     ret := return e:expr EOL
 
 call:
-    call := WORD ( a:args ) EOL
+    call := fname:WORD ( a:args ) EOL
 
 while:
     while:= while e:expr EOL INDENT
 
 pars!
-    tpar := w:WORD \: w:WORD , p:pars
-    par := w:WORD , p:pars
-    tpar := w:WORD \: w:WORD
-    par := w:WORD
+    tpar := name:WORD \: type:WORD , p:pars
+    par := name:WORD , p:pars
+    tpar := name:WORD \: name:WORD
+    par := name:WORD
 
 args!
-    arg := t:term , a:args
-    arg := t:term
+    arg := arg:term , a:args
+    arg := arg:term
 
 term!
-    call := WORD ( a:args )
-    number := NUMBER
-    word := WORD
-    string := STRING
+    call := fname:WORD ( a:args )
+    number := num:NUMBER
+    word := word:WORD
+    string := str:STRING
 
 delim:
     eol := EOL

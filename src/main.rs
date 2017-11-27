@@ -4,6 +4,7 @@ use std::io::BufReader;
 use std::io::prelude::*;
 use std::sync::Arc;
 
+mod extras;
 mod tokenizer;
 mod parser;
 
@@ -44,8 +45,6 @@ fn main() {
 
 
         // units ----------------------------------------
-        println!("\n== units ==");
-
         let mut unit_iter = args.iter();
         unit_iter.nth(1);
 
