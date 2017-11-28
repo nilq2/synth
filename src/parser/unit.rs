@@ -11,15 +11,14 @@ use extras::string::{StringExtras};
 #[derive(Debug)]
 pub struct Node<'u> {
     name: &'u Token<'u>,
-    variant: &'u Variant<'u,'u>,
-
-    tokens: Vec<Alias<'u, 'u>>,
-    children: Vec<Node<'u>>,
+    pub variant: &'u Variant<'u, 'u>,
+    pub tokens: Vec<Alias<'u, 'u>>,
+    pub children: Vec<Node<'u>>,
 }
 
 #[derive(Debug)]
 pub struct Path<'u> {
-    variant: &'u Variant<'u,'u>,
+    variant: &'u Variant<'u, 'u>,
     children: Vec<Path<'u>>,
 }
 
@@ -126,7 +125,7 @@ impl<'u> Unit<'u> {
     }
 
     fn check_rule (
-        &self, mut source: &mut TokenIterator, rule: &'u Rule<'u, 'u>
+        &self, mut source: &mut TokenIterator, rule: &'u Rule
     ) -> Option<Path> {
         for variant in &rule.variants {
             if let Some(path) = self.check_variant(&mut source, variant) {
@@ -138,7 +137,7 @@ impl<'u> Unit<'u> {
     }
 
     fn check_variant (
-        &self, mut source: &mut TokenIterator, variant: &'u Variant<'u,'u>
+        &self, mut source: &mut TokenIterator, variant: &'u Variant
     ) -> Option<Path> {
         //println!("?? checking {}", &variant.name.lexeme.unwrap());
 
@@ -230,8 +229,8 @@ impl<'u> Unit<'u> {
         Some(Path{ variant: variant, children: children })
     }
 
-    fn parse_path (&self, mut source: &mut TokenIterator<'u, 'u>, path: &Path<'u>) -> Node {
         let name = &self.template.find_rule(path.variant.rule).unwrap().name;
+    fn parse_path (&self, mut source: &mut TokenIterator, path: &Path<'u>) -> Node {
         let variant = &path.variant;
 
         let mut children: Vec<Node> = Vec::new();
@@ -249,7 +248,7 @@ impl<'u> Unit<'u> {
 
             if alias < variant.aliases.len() && index == variant.aliases[alias].token {
                 if variant.tokens[index].lexeme.unwrap().is_uppercase() {
-                    tokens.push(Alias { name: variant.aliases[alias].name, token: source.current });
+                    tokens.push(Alias::new(variant.aliases[alias].name, source.current));
                     source.next();
 
                 } else {
