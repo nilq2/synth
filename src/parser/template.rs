@@ -118,6 +118,7 @@ impl<'t, 's: 't> Template<'t, 's> {
         if iter.match_with(&[Type(Indent)]) {
             loop {
                 if iter.check(&[Pair(Symbol, "["), Type(Word), Pair(Symbol, "]"), Type(EOL)]) {
+                    print!("   ");
                     segments.push(self.parse_segment(&mut iter, &rule, Some(name.lexeme.unwrap())));
                 }
 

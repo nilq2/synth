@@ -1,6 +1,7 @@
 use tokenizer::token::Token;
 use template::Template;
 use alias::Alias;
+use unit::Node;
 
 #[derive(Debug)]
 pub struct Rule<'t, 's: 't> {
@@ -110,5 +111,8 @@ impl<'t, 's: 't> Segment<'t, 's> {
             None
         }
     }
-}
 
+    pub fn evaluate (&self, node: &Node) {
+        println!("evaluating {}", self.name.lexeme.unwrap());
+    }
+}

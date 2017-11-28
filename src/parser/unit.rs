@@ -7,6 +7,7 @@ use alias::*;
 use rule::*;
 use std::sync::Arc;
 use extras::string::{StringExtras};
+use compiler::compiler::AST;
 
 #[derive(Debug)]
 pub struct Node<'u> {
@@ -24,9 +25,9 @@ pub struct Path<'u> {
 #[derive(Debug)]
 pub struct Unit<'u> {
     source: &'u Source<'u>,
-    template: Arc<Template<'u,'u>>,
-    ast: Vec<Node<'u>>,
+    template: Arc<Template<'u, 'u>>,
 }
+
 
 
 fn dump_path(path: &Path) {
@@ -37,47 +38,18 @@ fn dump_path(path: &Path) {
     }
 }
 
-fn dump_node(source: &Source, node: &Node, dent: usize) {
-    for _ in 0..dent { print!("   "); }
-
-    print!("{}:{}", node.name.lexeme.unwrap(), node.variant.name.lexeme.unwrap());
-
-    if node.tokens.len() > 0 {
-        print!(" ( ");
-    }
-
-    for token in node.tokens.iter() {
-        print!("{}[{}], ",
-            token.name.lexeme.unwrap(),
-            source.tokens.as_ref().unwrap()[token.token].lexeme.unwrap()
-        );
-    }
-
-    if node.tokens.len() > 0 {
-        println!(")");
-    } else {
-        println!("");
-    }
-
-    for child in node.children.iter() {
-        dump_node(source, child, dent+1);
-    }
-}
-
 
 impl<'u> Unit<'u> {
-    pub fn new<'s, 't> (source: &'u Source<'s>, template: Arc<Template<'u,'t>>) -> Self  {
-        Self { source, template, ast:Vec::new() }
+    pub fn new (source: &'u Source<'u>, template: Arc<Template<'u,'u>>) -> Self  {
+        Self { source, template }
     }
 
-    pub fn parse (&mut self) {
+    pub fn parse (&mut self) -> AST {
         let tokens = self.source.tokens.as_ref().unwrap();
 
         let mut source = TokenIterator::new(tokens);
         let mut paths: Vec<Path> = Vec::new();
         let mut nodes: Vec<Node> = Vec::new();
-
-        //let mut ast = Vec::new();
 
         while source.get(0) != None {
             let mut path: Option<Path> = None;
@@ -116,11 +88,7 @@ impl<'u> Unit<'u> {
             nodes.push(self.parse_path(&mut source, path));
         }
 
-        for node in nodes.iter() {
-            dump_node(&self.source, &node, 1);
-            println!("");
-        }
-
+        AST::new ( self.source, nodes )
     }
 
     fn check_rule (
