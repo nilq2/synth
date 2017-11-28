@@ -10,7 +10,6 @@ use extras::string::{StringExtras};
 
 #[derive(Debug)]
 pub struct Node<'u> {
-    name: &'u Token<'u>,
     pub variant: &'u Variant<'u, 'u>,
     pub tokens: Vec<Alias<'u, 'u>>,
     pub children: Vec<Node<'u>>,
@@ -229,7 +228,6 @@ impl<'u> Unit<'u> {
         Some(Path{ variant: variant, children: children })
     }
 
-        let name = &self.template.find_rule(path.variant.rule).unwrap().name;
     fn parse_path (&self, mut source: &mut TokenIterator, path: &Path<'u>) -> Node {
         let variant = &path.variant;
 
@@ -264,7 +262,6 @@ impl<'u> Unit<'u> {
             index += 1;
         }
 
-        Node { name, variant, tokens, children }
+        Node { variant, tokens, children }
     }
 }
-
