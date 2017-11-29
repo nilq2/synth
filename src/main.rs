@@ -1,13 +1,14 @@
+extern crate colored;
+
 use std::fs::File;
 use std::path::Path;
 use std::io::BufReader;
 use std::io::prelude::*;
 use std::sync::Arc;
 
-mod compiler;
-mod extras;
-mod tokenizer;
-mod parser;
+mod synth;
+
+use synth::*;
 
 use tokenizer::tokenizer::*;
 use parser::*;
@@ -37,7 +38,14 @@ fn main() {
         let t_lines = t_raw.lines().map(|x| x.unwrap()).collect();
 
         let mut t_src = Source::new(&args[1], Some("!/def/"), &t_lines);
-        t_src.tokenize();
+        match t_src.tokenize() {
+            Err(ref e) => {
+                e.dump(&t_lines);
+                return
+            },
+
+            Ok(())     => (),
+        }
 
         let mut t = template::Template::new(&t_src);
         t.parse();
@@ -62,7 +70,10 @@ fn main() {
 
             let mut u_src = Source::new(unit, None, &u_lines);
             u_src.directives = t_arc.source.directives.clone();
-            u_src.tokenize();
+            match u_src.tokenize() {
+                Err(ref e) => e.dump(&u_lines),
+                Ok(())     => (),
+            }
 
             let mut u = unit::Unit::new(&u_src, t_arc.clone());
             let ast = u.parse();

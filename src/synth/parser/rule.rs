@@ -31,8 +31,6 @@ pub struct Segment<'t, 's: 't> {
     pub tokens: Vec<&'t Token<'s>>,
 }
 
-
-
 impl<'t, 's: 't> Rule<'t, 's> {
     pub fn new (
         name: &'t Token<'s>,

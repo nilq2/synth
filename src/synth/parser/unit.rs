@@ -28,8 +28,6 @@ pub struct Unit<'u> {
     template: Arc<Template<'u, 'u>>,
 }
 
-
-
 fn dump_path(path: &Path) {
     print!("{}", path.variant.name.lexeme.unwrap());
     for path in path.children.iter() {
@@ -37,7 +35,6 @@ fn dump_path(path: &Path) {
         dump_path(&path);
     }
 }
-
 
 impl<'u> Unit<'u> {
     pub fn new (source: &'u Source<'u>, template: Arc<Template<'u,'u>>) -> Self  {

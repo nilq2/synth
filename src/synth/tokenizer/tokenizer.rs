@@ -4,6 +4,8 @@ use std::str::Chars;
 use super::token::{Type as T, Token, PartialToken};
 use self::PartialToken::{Type};
 
+use super::error::*;
+
 #[derive(Debug)]
 pub struct Source<'s> {
     pub path:       &'s str,
@@ -13,7 +15,7 @@ pub struct Source<'s> {
 }
 
 impl<'s> Source<'s> {
-    pub fn new (path: &'s str, ctrl_char: Option<&str>, source_lines: &'s Vec<String>) -> Self {
+    pub fn new(path: &'s str, ctrl_char: Option<&str>, source_lines: &'s Vec<String>) -> Self {
 
         let mut lines: Vec<&str> = Vec::new();
         let mut directives: Vec<(&str, &str)> = Vec::new();
@@ -53,11 +55,14 @@ impl<'s> Source<'s> {
         }
     }
 
-    pub fn tokenize(&mut self) {
+    pub fn tokenize(&mut self) -> CompileResult<(), ()> {
+        let mut response = Vec::new();
+        
         let mut indents = Vec::new();
         let mut tokens  = Vec::new();
 
         let mut comment = 0; // start of block comment
+        let mut flag = false;
 
         for (mut l, line) in self.lines.iter().enumerate() {
             l += 1; // line offset
@@ -82,8 +87,9 @@ impl<'s> Source<'s> {
                     comment_d.push(delim);
                 }
 
-                if comment_d.len() > 3 {
-                    panic!("too many comment delimiters are defined at line {}", l);
+                if comment_d.len() > 3 && !flag {
+                    response.push(Response::Error("too many comment delimiters", Position::new((l, l), 0)));
+                    flag = true
                 }
             }
 
@@ -115,7 +121,7 @@ impl<'s> Source<'s> {
                         if next.is_numeric() {
                             while let Some(&(_, next)) = iter.peek() {
                                 if !next.is_numeric() {
-                                    break;
+                                    break
                                 }
                                 iter.next();
                             }
@@ -126,7 +132,7 @@ impl<'s> Source<'s> {
                         } else if next.is_alphabetic() {
                             while let Some(&(_, next)) = iter.peek() {
                                 if !next.is_alphanumeric() {
-                                    break;
+                                    break
                                 }
                                 iter.next();
                             }
@@ -142,7 +148,7 @@ impl<'s> Source<'s> {
                                 && self.matches(next, &mut iter.clone(), &vec![delim.clone()]) != None {
                                     tokens.push(Token::string(l, (from+1, to), &line[from+1..to]));
                                     iter.nth(delim.len()-1);
-                                    break;
+                                    break
                                 }
 
                                 last = next;
@@ -151,16 +157,15 @@ impl<'s> Source<'s> {
 
                         } else if let Some(delim) = self.matches(next, &mut iter.clone(), &comment_d) {
                             iter.nth(delim.len()-1);
-
+                            
                             match comment_d.len() {
                                 1 => { // single line
-                                    break; // skip the rest of the line
+                                    break // skip the rest of the line
                                 },
 
                                 2 => { // block
                                     if comment_d[1] == delim {
-                                        panic!("unexpected block comment terminator at line {}", l)
-
+                                        response.push(Response::Error("unexpected block comment terminator", Position::new((from, from + 2), 2)));
                                     } else {
                                         comment = l // block comment
                                     }
@@ -168,8 +173,7 @@ impl<'s> Source<'s> {
 
                                 3 => { // block and single line
                                     if comment_d[1] == delim {
-                                        panic!("unexpected block comment terminator at line {}", l)
-
+                                        response.push(Response::Error("unexpected block comment terminator", Position::new((from, from + 2), 2)));
                                     } else if comment_d[0] == delim {
                                         comment = l; // block comment
                                         break
@@ -179,7 +183,7 @@ impl<'s> Source<'s> {
                                     }
                                 },
 
-                                _ => {}
+                                _ => (),
                             }
 
                         } else if !next.is_whitespace()  {
@@ -204,12 +208,10 @@ impl<'s> Source<'s> {
             ).unwrap_or(false) {
                 tokens.push(Token::newline(l))
             }
-
-            //println!("{:5}| {}", l, line)
         }
 
         if comment != 0 {
-            panic!("block comment not terminated at line {}", comment)
+            response.push(Response::Error("unterminated block comment", Position::new((comment, 0), 2)));
         }
 
         for _ in indents {
@@ -217,7 +219,13 @@ impl<'s> Source<'s> {
         }
 
         tokens.push(Token::eof(self.lines.len()));
-        self.tokens = Some(tokens)
+        self.tokens = Some(tokens);
+        
+        if response.len() > 0 {
+            Err(Outcome::new((), Some(response)))
+        } else {
+            Ok(())
+        }
     }
 
     fn matches (
@@ -254,5 +262,3 @@ impl<'s> Source<'s> {
         None
     }
 }
-
-
