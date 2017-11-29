@@ -85,7 +85,7 @@ impl<'s> Source<'s> {
                 comment_d = comment_delim.split_whitespace().collect();
 
                 if comment_d.len() > 3 && !flag {
-                    response.push(Response::Error(Some(PartialToken::PosLexeme { line: l, slice: (0, 0), lexeme: "" }), "too many comment delimiters".to_owned()));
+                    response.push(Response::Error(Some(PartialToken::PosLexeme { line: l, slice: (0, 0), lexeme: "".to_owned() }), "too many comment delimiters".to_owned()));
                     flag = true
                 }
             }
@@ -152,7 +152,7 @@ impl<'s> Source<'s> {
                                 iter.next();
                             }
 
-                        } else if let Some(delim) = self.matches(next, &mut iter.clone(), &comment_d) {
+                        } else if let Some(delim) = self.matches(next, &mut iter.clone(), &comment_d).to_owned() {
                             iter.nth(delim.len()-1);
                             
                             match comment_d.len() {
@@ -162,7 +162,7 @@ impl<'s> Source<'s> {
 
                                 2 => { // block
                                     if comment_d[1] == delim {
-                                        response.push(Response::Error(Some(PartialToken::PosLexeme { line: l, slice: (from, from + 2), lexeme: delim }), "unexpected block comment terminator".to_owned()));
+                                        response.push(Response::Error(Some(PartialToken::PosLexeme { line: l, slice: (from, from + 2), lexeme: delim.to_owned() }), "unexpected block comment terminator".to_owned()));
                                     } else {
                                         comment = l // block comment
                                     }
@@ -170,7 +170,7 @@ impl<'s> Source<'s> {
 
                                 3 => { // block and single line
                                     if comment_d[1] == delim {
-                                        response.push(Response::Error(Some(PartialToken::PosLexeme { line: l, slice: (from, from + 2), lexeme: delim }), "unexpected block comment terminator".to_owned()));
+                                        response.push(Response::Error(Some(PartialToken::PosLexeme { line: l, slice: (from, from + 2), lexeme: delim.to_owned() }), "unexpected block comment terminator".to_owned()));
                                     } else if comment_d[0] == delim {
                                         comment = l; // block comment
                                         break
@@ -208,7 +208,7 @@ impl<'s> Source<'s> {
         }
 
         if comment != 0 {
-            response.push(Response::Error(Some(PartialToken::PosLexeme { line: comment, slice: (comment, comment), lexeme: "" }), "unterminated block comment".to_owned()));
+            response.push(Response::Error(Some(PartialToken::PosLexeme { line: comment, slice: (comment, comment), lexeme: "".to_owned() }), "unterminated block comment".to_owned()));
         }
 
         for _ in indents {

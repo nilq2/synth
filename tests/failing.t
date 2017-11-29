@@ -1,4 +1,2 @@
-!/def/comment /* */ // ab abb
+!/def/comment /* */ //
 !/def/string " '
-
-/*

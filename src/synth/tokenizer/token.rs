@@ -53,10 +53,8 @@ pub enum PartialToken<'s> {
     Type(Type),
     Lexeme(&'s str),
     Pair(Type, &'s str),
+    PosLexeme { line: usize, slice: (usize, usize), lexeme: String },
 
-    Pos { line: usize, slice: (usize, usize) },
-    PosLexeme { line: usize, slice: (usize, usize), lexeme: &'s str },
-    
     Full(&'s Token<'s>),
 }
 
@@ -77,10 +75,8 @@ impl<'t> PartialEq<PartialToken<'t>> for Token<'t> {
                 self.lexeme == Some(*l),
             PartialToken::Pair(ref t, ref l) =>
                 self.lexeme == Some(*l) && self.token_type == *t,
-            PartialToken::Pos { ref line, ref slice } =>
-                self.line == *line && self.slice == *slice,
             PartialToken::PosLexeme {ref line, ref slice, ref lexeme} =>
-                self.line == *line && self.slice == *slice && self.lexeme == Some(*lexeme),
+                self.line == *line && self.slice == *slice && self.lexeme.unwrap() == lexeme,
             PartialToken::Full(ref t) =>
                 self == *t,
         }

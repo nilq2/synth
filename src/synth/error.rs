@@ -1,5 +1,4 @@
 use colored::*;
-use std::rc::Rc;
 
 use super::tokenizer::token::PartialToken;
 
@@ -53,14 +52,12 @@ impl<'o, T: Clone> Outcome<'o, T> {
         if self.response.is_some() {
             for value in self.response.clone().unwrap().iter() {
                 match *value {
-                    Response::Error(ref v, ref pos) => {
+                    Response::Error(ref v, ref message) => {
                         match *v {
                             Some(ref token) => {
                                 match *token {
                                     PartialToken::Full(ref token) => {
-                                        let v = token.lexeme.unwrap_or("");
-
-                                        println!("{}: {}", "note".white().bold(), v.white().bold());
+                                        println!("{}: {}", "error".red().bold(), message.white().bold());
 
                                         let line = format!("{} |", token.line).blue().bold();
                                         println!("{}{}", line, lines.get(token.line - 1).unwrap());
@@ -70,11 +67,28 @@ impl<'o, T: Clone> Outcome<'o, T> {
                                         }
 
                                         for _ in 0 .. token.slice.1 - token.slice.0 {
-                                            print!("{}", "^".white().bold())
+                                            print!("{}", "^".red().bold())
                                         }
 
                                         println!()
-                                    }
+                                    },
+
+                                    PartialToken::PosLexeme {ref line, ref slice, ..} => {
+                                        println!("{}: {}", "error".red().bold(), message.white().bold());
+
+                                        let ln = format!("{} |", line).blue().bold();
+                                        println!("{}{}", ln, lines.get(line - 1).unwrap());
+
+                                        for _ in 0 .. ln.len() + slice.0 {
+                                            print!(" ")
+                                        }
+
+                                        for _ in 0 .. slice.1 - slice.0 {
+                                            print!("{}", "^".red().bold())
+                                        }
+                                        
+                                        println!()
+                                    },
                                     
                                     _ => (),
                                 }
@@ -84,14 +98,12 @@ impl<'o, T: Clone> Outcome<'o, T> {
                         }
                     },
                     
-                    Response::Warning(ref v, ref pos) => {
+                    Response::Warning(ref v, ref message) => {
                         match *v {
                             Some(ref token) => {
                                 match *token {
                                     PartialToken::Full(ref token) => {
-                                        let v = token.lexeme.unwrap_or("");
-                                        
-                                        println!("{}: {}", "note".yellow().bold(), v.white().bold());
+                                        println!("{}: {}", "warning".yellow().bold(), message.white().bold());
 
                                         let line = format!("{} |", token.line).blue().bold();
                                         println!("{}{}", line, lines.get(token.line - 1).unwrap());
@@ -101,8 +113,27 @@ impl<'o, T: Clone> Outcome<'o, T> {
                                         }
 
                                         for _ in 0 .. token.slice.1 - token.slice.0 {
-                                            print!("{}", "^".white().bold())
+                                            print!("{}", "^".yellow().bold())
                                         }
+                                        
+                                        println!()
+                                    },
+
+                                    PartialToken::PosLexeme {ref line, ref slice, ..} => {
+                                        println!("{}: {}", "warning".yellow().bold(), message.white().bold());
+
+                                        let ln = format!("{} |", line).blue().bold();
+                                        println!("{}{}", ln, lines.get(line - 1).unwrap());
+
+                                        for _ in 0 .. ln.len() + slice.0 {
+                                            print!(" ")
+                                        }
+
+                                        for _ in 0 .. slice.1 - slice.0 {
+                                            print!("{}", "^".yellow().bold())
+                                        }
+                                        
+                                        println!()
                                     },
                                     
                                     _ => (),
@@ -113,14 +144,12 @@ impl<'o, T: Clone> Outcome<'o, T> {
                         }
                     },
 
-                    Response::Note(ref v, ref pos) => {
+                    Response::Note(ref v, ref message) => {
                         match *v {
                             Some(ref token) => {
                                 match *token {
                                     PartialToken::Full(ref token) => {
-                                        let v = token.lexeme.unwrap_or("");
-                                        
-                                        println!("{}: {}", "note".white().bold(), v.white().bold());
+                                        println!("{}: {}", "note".white().bold(), message.white().bold());
 
                                         let line = format!("{} |", token.line).blue().bold();
                                         println!("{}{}", line, lines.get(token.line - 1).unwrap());
@@ -132,6 +161,25 @@ impl<'o, T: Clone> Outcome<'o, T> {
                                         for _ in 0 .. token.slice.1 - token.slice.0 {
                                             print!("{}", "^".white().bold())
                                         }
+                                        
+                                        println!()
+                                    },
+
+                                    PartialToken::PosLexeme {ref line, ref slice, ..} => {
+                                        println!("{}: {}", "note".white().bold(), message.white().bold());
+
+                                        let ln = format!("{} |", line).blue().bold();
+                                        println!("{}{}", ln, lines.get(line - 1).unwrap());
+
+                                        for _ in 0 .. ln.len() + slice.0 {
+                                            print!(" ")
+                                        }
+
+                                        for _ in 0 .. slice.1 - slice.0 {
+                                            print!("{}", "^".white().bold())
+                                        }
+                                        
+                                        println!()
                                     },
 
                                     _ => (),

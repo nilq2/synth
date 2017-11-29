@@ -70,9 +70,6 @@ impl<'u> Unit<'u> {
                     break
                 }
 
-                let start = source.get(0).unwrap().slice.0;
-                let end   = source.get(0).unwrap().slice.1;
-                
                 response.push(Response::Error(Some(Full(&source.get(0).unwrap())), format!("no path matches at token: {}", source.get(0).unwrap().lexeme.unwrap())));
                 break
             }
