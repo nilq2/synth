@@ -44,8 +44,19 @@ impl<'o, T> Outcome<'o, T> {
             response,
         }
     }
+    
+    pub fn is_error(&self) -> bool {
+        for i in self.response.clone().unwrap().iter() {
+            match *i {
+                Response::Error(_, _) => return true,
+                _                     => (),
+            }
+        }
 
-    pub fn dump(&self, lines: &Vec<String>) {
+        false
+    }
+
+    pub fn dump(&self, lines: &Vec<String>) -> &Self {
         if self.response.is_some() {
             for value in self.response.clone().unwrap().iter() {
                 match *value {
@@ -98,7 +109,7 @@ impl<'o, T> Outcome<'o, T> {
                 }
             }
         }
+        
+        &self
     }
 }
-
-pub type CompileResult<'o, A, B> = Result<A, Outcome<'o, B>>;

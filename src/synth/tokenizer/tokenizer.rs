@@ -55,7 +55,7 @@ impl<'s> Source<'s> {
         }
     }
 
-    pub fn tokenize(&mut self) -> CompileResult<(), ()> {
+    pub fn tokenize(&mut self) -> Outcome<()> {
         let mut response = Vec::new();
         
         let mut indents = Vec::new();
@@ -222,9 +222,9 @@ impl<'s> Source<'s> {
         self.tokens = Some(tokens);
         
         if response.len() > 0 {
-            Err(Outcome::new((), Some(response)))
+            Outcome::new((), Some(response))
         } else {
-            Ok(())
+            Outcome::new((), None)
         }
     }
 

@@ -38,20 +38,15 @@ fn main() {
         let t_lines = t_raw.lines().map(|x| x.unwrap()).collect();
 
         let mut t_src = Source::new(&args[1], Some("!/def/"), &t_lines);
-        match t_src.tokenize() {
-            Err(ref e) => {
-                e.dump(&t_lines);
-                return
-            },
 
-            Ok(())     => (),
+        if t_src.tokenize().dump(&t_lines).is_error() {
+            return
         }
 
         let mut t = template::Template::new(&t_src);
         t.parse();
 
         let t_arc = Arc::new(t);
-
 
         // units ----------------------------------------
         let mut unit_iter = args.iter();
@@ -70,9 +65,9 @@ fn main() {
 
             let mut u_src = Source::new(unit, None, &u_lines);
             u_src.directives = t_arc.source.directives.clone();
-            match u_src.tokenize() {
-                Err(ref e) => e.dump(&u_lines),
-                Ok(())     => (),
+
+            if u_src.tokenize().dump(&u_lines).is_error() {
+                return
             }
 
             let mut u = unit::Unit::new(&u_src, t_arc.clone());
