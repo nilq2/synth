@@ -42,8 +42,6 @@ impl Type {
 
             Type::EOL => "EOL",
             Type::EOF => "EOF",
-
-            _ => "None",
         }
     }
 }

@@ -3,32 +3,31 @@ use tokenizer::token::Type::*;
 use tokenizer::token::PartialToken::*;
 use tokenizer::tokenizer::Source;
 use template::*;
-use rule::*;
 use alias::*;
+use rule::*;
 use std::sync::Arc;
-
+use extras::string::{StringExtras};
+use compiler::compiler::AST;
 
 #[derive(Debug)]
 pub struct Node<'u> {
-    name: &'u Token<'u>,
-    variant: &'u Variant<'u,'u>,
-
-    tokens: Vec<&'u Token<'u>>,
-    children: Vec<&'u Node<'u>>,
+    pub variant: &'u Variant<'u, 'u>,
+    pub tokens: Vec<Alias<'u, 'u>>,
+    pub children: Vec<Node<'u>>,
 }
 
 #[derive(Debug)]
 pub struct Path<'u> {
-    variant: &'u Variant<'u,'u>,
+    variant: &'u Variant<'u, 'u>,
     children: Vec<Path<'u>>,
 }
 
 #[derive(Debug)]
 pub struct Unit<'u> {
     source: &'u Source<'u>,
-    template: Arc<Template<'u,'u>>,
-    ast: Option<Vec<Node<'u>>>,
+    template: Arc<Template<'u, 'u>>,
 }
+
 
 
 fn dump_path(path: &Path) {
@@ -41,17 +40,16 @@ fn dump_path(path: &Path) {
 
 
 impl<'u> Unit<'u> {
-    pub fn new<'s, 't> (source: &'u Source<'s>, template: Arc<Template<'u,'t>>) -> Self  {
-        Self { source, template, ast:None }
+    pub fn new (source: &'u Source<'u>, template: Arc<Template<'u,'u>>) -> Self  {
+        Self { source, template }
     }
 
-    pub fn parse (&mut self) {
+    pub fn parse (&mut self) -> AST {
         let tokens = self.source.tokens.as_ref().unwrap();
 
         let mut source = TokenIterator::new(tokens);
         let mut paths: Vec<Path> = Vec::new();
-
-        //let mut ast = Vec::new();
+        let mut nodes: Vec<Node> = Vec::new();
 
         while source.get(0) != None {
             let mut path: Option<Path> = None;
@@ -59,7 +57,7 @@ impl<'u> Unit<'u> {
             for rule in self.template.rules.as_ref().unwrap().iter() {
                 if rule.is_matching {
                     path = self.check_rule(&mut source, &rule);
-                    if let Some(ref p) = path {
+                    if let Some(_) = path {
                         break
                     }
                 }
@@ -72,7 +70,7 @@ impl<'u> Unit<'u> {
                 panic!("no path matches at token {:?}", source.get(0));
             }
 
-            println!("   ++ matched {}\n", path.as_ref().unwrap().variant.name.lexeme.unwrap());
+            println!("   ++ matched {}", path.as_ref().unwrap().variant.name.lexeme.unwrap());
             paths.push(path.unwrap());
         }
 
@@ -82,26 +80,33 @@ impl<'u> Unit<'u> {
             dump_path(&path);
             print!("\n   ");
         }
+
+        println!("\n:: AST ::");
+        source.current = 0;
+
+        for path in paths.iter() {
+            nodes.push(self.parse_path(&mut source, path));
+        }
+
+        AST::new ( self.source, nodes )
     }
 
     fn check_rule (
-        &self, mut source: &mut TokenIterator, rule: &'u Rule<'u, 'u>
+        &self, mut source: &mut TokenIterator, rule: &'u Rule
     ) -> Option<Path> {
         for variant in &rule.variants {
             if let Some(path) = self.check_variant(&mut source, variant) {
-                println!("");
                 return Some(path)
             }
         }
-        println!("");
 
         None
     }
 
     fn check_variant (
-        &self, mut source: &mut TokenIterator, variant: &'u Variant<'u,'u>
+        &self, mut source: &mut TokenIterator, variant: &'u Variant
     ) -> Option<Path> {
-        println!("?? checking {}", &variant.name.lexeme.unwrap());
+        //println!("?? checking {}", &variant.name.lexeme.unwrap());
 
         let aliases = &variant.aliases;
         let tokens = &variant.tokens;
@@ -120,7 +125,7 @@ impl<'u> Unit<'u> {
             }
 
             if alias < aliases.len() && index == aliases[alias].token {
-                if tokens[index].lexeme.unwrap().to_uppercase() == tokens[index].lexeme.unwrap() {
+                if tokens[index].lexeme.unwrap().is_uppercase() {
                     if source.get(0).unwrap()
                     != &Type(Type::from_str(tokens[index].lexeme.unwrap()).unwrap()) {
                         //println!("   -- didn't match type {}", tokens[index].lexeme.unwrap());
@@ -158,13 +163,12 @@ impl<'u> Unit<'u> {
                 alias += 1;
 
             } else {
-
+                /*
                 println!("   !! {:?} {}", tokens[index].lexeme, source.get(0).unwrap().lexeme.unwrap_or(
                    &source.get(0).unwrap().token_type.to_str()
                 ));
-                //*/
-                if tokens[index].token_type == Word
-                && tokens[index].lexeme.unwrap().to_uppercase() == tokens[index].lexeme.unwrap() {
+                */
+                if tokens[index].token_type == Word && tokens[index].lexeme.unwrap().is_uppercase() {
                     if source.get(0).unwrap()
                     != &Type(Type::from_str(tokens[index].lexeme.unwrap()).unwrap()) {
                         //println!("   -- didn't match type {}", tokens[index].lexeme.unwrap());
@@ -172,14 +176,11 @@ impl<'u> Unit<'u> {
                         return None
                     }
 
-                } else if source.get(0).unwrap()
-                != &Lexeme(tokens[index].lexeme.unwrap()) {
+                } else if source.get(0).unwrap() != &Lexeme(tokens[index].lexeme.unwrap()) {
                     /*
                     println!("   -- didn't match token {} at {}",
                         tokens[index].lexeme.unwrap(),
-                        &source.get(0).unwrap().lexeme.unwrap_or(
-                            &source.get(0).unwrap().token_type.to_str()
-                        )
+                        &source.get(0).unwrap().lexeme.unwrap_or(&source.get(0).unwrap().token_type.to_str())
                     );
                     */
                     source.current = reset;
@@ -195,8 +196,40 @@ impl<'u> Unit<'u> {
         Some(Path{ variant: variant, children: children })
     }
 
-    fn parse_path (&self, mut source: &mut TokenIterator, path: &Path) {
+    fn parse_path (&self, mut source: &mut TokenIterator, path: &Path<'u>) -> Node {
+        let variant = &path.variant;
 
+        let mut children: Vec<Node> = Vec::new();
+        let mut tokens: Vec<Alias> = Vec::new();
+
+        let mut alias = 0;
+        let mut index = 0;
+
+        let mut pchildren = path.children.iter();
+
+        while index < variant.tokens.len() {
+            if variant.tokens[index].lexeme.unwrap() == "\\" {
+                index += 1;
+            }
+
+            if alias < variant.aliases.len() && index == variant.aliases[alias].token {
+                if variant.tokens[index].lexeme.unwrap().is_uppercase() {
+                    tokens.push(Alias::new(variant.aliases[alias].name, source.current));
+                    source.next();
+
+                } else {
+                    children.push(self.parse_path(&mut source, pchildren.next().unwrap()));
+                }
+
+                alias += 1;
+
+            } else {
+                source.next();
+            }
+
+            index += 1;
+        }
+
+        Node { variant, tokens, children }
     }
 }
-

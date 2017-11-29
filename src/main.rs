@@ -4,6 +4,8 @@ use std::io::BufReader;
 use std::io::prelude::*;
 use std::sync::Arc;
 
+mod compiler;
+mod extras;
 mod tokenizer;
 mod parser;
 
@@ -44,8 +46,6 @@ fn main() {
 
 
         // units ----------------------------------------
-        println!("\n== units ==");
-
         let mut unit_iter = args.iter();
         unit_iter.nth(1);
 
@@ -65,7 +65,9 @@ fn main() {
             u_src.tokenize();
 
             let mut u = unit::Unit::new(&u_src, t_arc.clone());
-            u.parse();
+            let ast = u.parse();
+            ast.analyse();
+            ast.compile();
         }
 
     } else {

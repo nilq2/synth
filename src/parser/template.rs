@@ -18,6 +18,16 @@ impl<'t, 's: 't> Template<'t, 's> {
         Self { source, rules:None }
     }
 
+    pub fn find_rule (&self, name: &str) -> Option<&Rule> {
+        for rule in self.rules.as_ref().unwrap().iter() {
+            if rule.name.lexeme.unwrap() == name {
+                return Some(rule)
+            }
+        }
+
+        None
+    }
+
     pub fn parse (&mut self) {
         let tokens = self.source.tokens.as_ref().unwrap();
 
@@ -28,6 +38,7 @@ impl<'t, 's: 't> Template<'t, 's> {
             if iter.check(&[Type(Word), Pair(Symbol, ":"), Type(EOL)])
             || iter.check(&[Type(Word), Pair(Symbol, "!"), Type(EOL)]) {
                 rules.push(self.parse_rule(&mut iter));
+                println!("");
             }
             //iter.next();
         }
@@ -43,6 +54,7 @@ impl<'t, 's: 't> Template<'t, 's> {
         let mut segments: Vec<Segment<'t, 's>> = Vec::new();
         let mut variants: Vec<Variant<'t, 's>> = Vec::new();
 
+
         if !iter.match_with(&[Type(Indent)]) {
             panic!("empty rule");
         }
@@ -51,21 +63,26 @@ impl<'t, 's: 't> Template<'t, 's> {
 
         while !iter.match_with(&[Type(Dedent)]) {
             if iter.check(&[Type(Word), Lexeme(":"), Lexeme("=")]) {
-                variants.push(self.parse_variant(&mut iter));
+                variants.push(self.parse_variant(&mut iter, name.lexeme.unwrap()));
 
             } else if iter.check(&[Lexeme("["), Type(Word), Lexeme("]"), Type(EOL)]) {
-                segments.push(self.parse_segment(&mut iter));
+                segments.push(self.parse_segment(&mut iter, name.lexeme.unwrap(), None));
             }
         }
 
         Rule::new ( name, is_matching, variants, segments )
     }
 
-    fn parse_variant (&mut self, mut iter: &mut TokenIterator<'t, 's>) -> Variant<'t, 's> {
+    fn parse_variant (
+        &mut self,
+        mut iter: &mut TokenIterator<'t, 's>,
+        rule: &'t str,
+    ) -> Variant<'t, 's> {
+
         let name = iter.get(0).unwrap();
         iter.eat(3);
 
-        println!(":= parsing variant {:?}", name.lexeme);
+        println!("   := parsing variant {:?}", name.lexeme);
 
         let mut segments: Vec<Segment<'t, 's>> = Vec::new();
         let mut tokens: Vec<&'t Token<'s>> = Vec::new();
@@ -101,7 +118,8 @@ impl<'t, 's: 't> Template<'t, 's> {
         if iter.match_with(&[Type(Indent)]) {
             loop {
                 if iter.check(&[Pair(Symbol, "["), Type(Word), Pair(Symbol, "]"), Type(EOL)]) {
-                    segments.push(self.parse_segment(&mut iter));
+                    print!("   ");
+                    segments.push(self.parse_segment(&mut iter, &rule, Some(name.lexeme.unwrap())));
                 }
 
                 if iter.match_with(&[Type(Dedent)]) {
@@ -110,14 +128,20 @@ impl<'t, 's: 't> Template<'t, 's> {
             }
         }
 
-        Variant::new ( name, tokens, segments, aliases )
+        Variant::new ( name, &rule, tokens, segments, aliases )
     }
 
-    fn parse_segment (&mut self, iter: &mut TokenIterator<'t, 's>) -> Segment<'t, 's> {
+    fn parse_segment (
+        &mut self,
+        iter: &mut TokenIterator<'t, 's>,
+        rule: &'t str,
+        variant: Option<&'t str>,
+    ) -> Segment<'t, 's> {
+
         let name = iter.get(1).unwrap();
         iter.eat(3);
 
-        println!("[] parsing segment {:?}", name.lexeme);
+        println!("   [] parsing segment {:?}", name.lexeme);
 
         if !iter.match_with(&[Type(EOL), Type(Indent)]) {
             panic!("empty segment");
@@ -140,6 +164,6 @@ impl<'t, 's: 't> Template<'t, 's> {
 
         iter.next();
 
-        Segment::new ( name, tokens )
+        Segment::new ( name, rule, variant, tokens )
     }
 }
