@@ -39,7 +39,7 @@ fn main() {
 
         let mut t_src = Source::new(&args[1], Some("!/def/"), &t_lines);
 
-        if t_src.tokenize().dump(&t_lines).is_error() {
+        if t_src.tokenize().dump(&t_lines.iter().map(|n| n.as_str()).collect()).is_error() {
             return
         }
 
@@ -66,14 +66,14 @@ fn main() {
             let mut u_src = Source::new(unit, None, &u_lines);
             u_src.directives = t_arc.source.directives.clone();
 
-            if u_src.tokenize().dump(&u_lines).is_error() {
+            if u_src.tokenize().dump(&u_lines.iter().map(|n| n.as_str()).collect()).is_error() {
                 return
             }
 
             let mut u = unit::Unit::new(&u_src, t_arc.clone());
             let ast = u.parse();
 
-            ast.dump(&u_lines);
+            ast.dump(&u_src.lines);
 
             if ast.is_error() {
                 return

@@ -5,6 +5,8 @@ use tokenizer::tokenizer::*;
 use rule::*;
 use alias::*;
 
+use std::string;
+
 use super::error::*;
 
 #[derive(Debug)]
@@ -37,11 +39,7 @@ impl<'t, 's: 't> Template<'t, 's> {
 
         while !iter.match_with(&[Type(EOF)]) {
             if iter.check(&[Type(Word), Pair(Symbol, ":"), Type(EOL)]) || iter.check(&[Type(Word), Pair(Symbol, "!"), Type(EOL)]) {
-                let (mut res, rule) = self.parse_rule(&mut iter);
-
-                response.append(&mut res);
-
-                rules.push(rule);
+                rules.push(self.parse_rule(&mut iter).dump(&self.source.lines).unwrap());
                 println!()
             }
         }
@@ -55,7 +53,7 @@ impl<'t, 's: 't> Template<'t, 's> {
         }
     }
 
-    fn parse_rule (&self, mut iter: &mut TokenIterator<'t, 's>) -> (Vec<Response>, Rule<'t, 's>) {
+    fn parse_rule (&self, mut iter: &mut TokenIterator<'t, 's>) -> Outcome<Rule<'t, 's>> {
         let mut response = Vec::new();
         
         let name = iter.next().unwrap();
@@ -67,20 +65,24 @@ impl<'t, 's: 't> Template<'t, 's> {
 
         if !iter.match_with(&[Type(Indent)]) {
             response.push(Response::Error(Some(Pos {line: name.line, slice: name.slice }), format!("empty rule: {}", name.lexeme.unwrap())))
-        }
+        } else {
+            println!(":: parsing rule {:?}", name.lexeme);
 
-        println!(":: parsing rule {:?}", name.lexeme);
+            while !iter.match_with(&[Type(Dedent)]) {
+                if iter.check(&[Type(Word), Lexeme(":"), Lexeme("=")]) {
+                    variants.push(self.parse_variant(&mut iter, name.lexeme.unwrap()));
 
-        while !iter.match_with(&[Type(Dedent)]) {
-            if iter.check(&[Type(Word), Lexeme(":"), Lexeme("=")]) {
-                variants.push(self.parse_variant(&mut iter, name.lexeme.unwrap()));
-
-            } else if iter.check(&[Lexeme("["), Type(Word), Lexeme("]"), Type(EOL)]) {
-                segments.push(self.parse_segment(&mut iter, name.lexeme.unwrap(), None));
+                } else if iter.check(&[Lexeme("["), Type(Word), Lexeme("]"), Type(EOL)]) {
+                    segments.push(self.parse_segment(&mut iter, name.lexeme.unwrap(), None));
+                }
             }
         }
 
-        (response, Rule::new(name, is_matching, variants, segments))
+        if response.len() > 0 {
+            Outcome::new(Rule::new(name, is_matching, variants, segments), Some(response))
+        } else {
+            Outcome::new(Rule::new(name, is_matching, variants, segments), Some(response))
+        }
     }
 
     fn parse_variant (

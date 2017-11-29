@@ -48,11 +48,11 @@ impl<'o, T: Clone> Outcome<'o, T> {
         self.value.clone()
     }
     
-    pub fn error(message: &str, line: usize, slice: (usize, usize), lines: &Vec<String>) {
+    pub fn error(message: &str, line: usize, slice: (usize, usize), lines: &Vec<&str>) {
         println!("{}: {}", "error".red().bold(), message.white().bold());
 
         let ln = format!("{} |", line).blue().bold();
-        println!("{}{}", line, lines.get(line - 1).unwrap());
+        println!("{}{}", ln, lines.get(line - 1).unwrap());
 
         for _ in 0 .. ln.len() + slice.0 {
             print!(" ")
@@ -65,11 +65,11 @@ impl<'o, T: Clone> Outcome<'o, T> {
         println!()
     }
     
-    pub fn warning(message: &str, line: usize, slice: (usize, usize), lines: &Vec<String>) {
+    pub fn warning(message: &str, line: usize, slice: (usize, usize), lines: &Vec<&str>) {
         println!("{}: {}", "warning".red().bold(), message.white().bold());
 
         let ln = format!("{} |", line).blue().bold();
-        println!("{}{}", line, lines.get(line - 1).unwrap());
+        println!("{}{}", ln, lines.get(line - 1).unwrap());
 
         for _ in 0 .. ln.len() + slice.0 {
             print!(" ")
@@ -82,11 +82,11 @@ impl<'o, T: Clone> Outcome<'o, T> {
         println!()
     }
 
-    pub fn note(message: &str, line: usize, slice: (usize, usize), lines: &Vec<String>) {
+    pub fn note(message: &str, line: usize, slice: (usize, usize), lines: &Vec<&str>) {
         println!("{}: {}", "note".white().bold(), message.white().bold());
 
         let ln = format!("{} |", line).blue().bold();
-        println!("{}{}", line, lines.get(line - 1).unwrap());
+        println!("{}{}", ln, lines.get(line - 1).unwrap());
 
         for _ in 0 .. ln.len() + slice.0 {
             print!(" ")
@@ -99,7 +99,7 @@ impl<'o, T: Clone> Outcome<'o, T> {
         println!()
     }
 
-    pub fn dump(&self, lines: &Vec<String>) -> &Self {
+    pub fn dump(&self, lines: &Vec<&str>) -> &Self {
         if self.response.is_some() {
             for value in self.response.as_ref().unwrap().iter() {
                 match *value {
