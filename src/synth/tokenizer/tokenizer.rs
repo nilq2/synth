@@ -16,7 +16,6 @@ pub struct Source<'s> {
 
 impl<'s> Source<'s> {
     pub fn new(path: &'s str, ctrl_char: Option<&str>, source_lines: &'s Vec<String>) -> Self {
-
         let mut lines: Vec<&str> = Vec::new();
         let mut directives: Vec<(&str, &str)> = Vec::new();
 
@@ -48,9 +47,9 @@ impl<'s> Source<'s> {
         }
     }
 
-    pub fn get_directive (&self, name: &str) -> Option<&str> {
-        match self.directives.iter().find(|n| n.0 == name).map(|n| &n.1) {
-            Some(n) => Some(n.to_owned()),
+    pub fn get_directive(&self, name: &str) -> Option<&str> {
+        match self.directives.iter().find(|n| n.0 == name) {
+            Some(n) => Some(n.1),
             None    => None,
         }
     }
@@ -83,12 +82,10 @@ impl<'s> Source<'s> {
 
             // directive for comment parsing
             if let Some(comment_delim) = self.get_directive("comment") {
-                for delim in comment_delim.split_whitespace() {
-                    comment_d.push(delim);
-                }
+                comment_d = comment_delim.split_whitespace().collect();
 
                 if comment_d.len() > 3 && !flag {
-                    response.push(Response::Error("too many comment delimiters", Position::new((l, l), 0)));
+                    response.push(Response::Error(Some(PartialToken::PosLexeme { line: l, slice: (0, 0), lexeme: "" }), "too many comment delimiters".to_owned()));
                     flag = true
                 }
             }
@@ -165,7 +162,7 @@ impl<'s> Source<'s> {
 
                                 2 => { // block
                                     if comment_d[1] == delim {
-                                        response.push(Response::Error("unexpected block comment terminator", Position::new((from, from + 2), 2)));
+                                        response.push(Response::Error(Some(PartialToken::PosLexeme { line: l, slice: (from, from + 2), lexeme: delim }), "unexpected block comment terminator".to_owned()));
                                     } else {
                                         comment = l // block comment
                                     }
@@ -173,7 +170,7 @@ impl<'s> Source<'s> {
 
                                 3 => { // block and single line
                                     if comment_d[1] == delim {
-                                        response.push(Response::Error("unexpected block comment terminator", Position::new((from, from + 2), 2)));
+                                        response.push(Response::Error(Some(PartialToken::PosLexeme { line: l, slice: (from, from + 2), lexeme: delim }), "unexpected block comment terminator".to_owned()));
                                     } else if comment_d[0] == delim {
                                         comment = l; // block comment
                                         break
@@ -211,7 +208,7 @@ impl<'s> Source<'s> {
         }
 
         if comment != 0 {
-            response.push(Response::Error("unterminated block comment", Position::new((comment, 0), 2)));
+            response.push(Response::Error(Some(PartialToken::PosLexeme { line: comment, slice: (comment, comment), lexeme: "" }), "unterminated block comment".to_owned()));
         }
 
         for _ in indents {
@@ -220,7 +217,7 @@ impl<'s> Source<'s> {
 
         tokens.push(Token::eof(self.lines.len()));
         self.tokens = Some(tokens);
-        
+
         if response.len() > 0 {
             Outcome::new((), Some(response))
         } else {

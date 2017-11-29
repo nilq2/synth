@@ -1,4 +1,6 @@
-#[derive(Debug, PartialEq)]
+use std::rc::Rc;
+
+#[derive(Debug, PartialEq, Clone)]
 pub enum Type {
     Number,
     String,
@@ -46,14 +48,19 @@ impl Type {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum PartialToken<'s> {
     Type(Type),
     Lexeme(&'s str),
     Pair(Type, &'s str),
+
+    Pos { line: usize, slice: (usize, usize) },
+    PosLexeme { line: usize, slice: (usize, usize), lexeme: &'s str },
+    
+    Full(&'s Token<'s>),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Token<'t> {
     pub token_type: Type,
     pub line:       usize,
@@ -68,9 +75,14 @@ impl<'t> PartialEq<PartialToken<'t>> for Token<'t> {
                 self.token_type == *t,
             PartialToken::Lexeme(ref l) =>
                 self.lexeme == Some(*l),
-            PartialToken::Pair(ref t, ref l) => {
-                self.lexeme == Some(*l) && self.token_type == *t
-            },
+            PartialToken::Pair(ref t, ref l) =>
+                self.lexeme == Some(*l) && self.token_type == *t,
+            PartialToken::Pos { ref line, ref slice } =>
+                self.line == *line && self.slice == *slice,
+            PartialToken::PosLexeme {ref line, ref slice, ref lexeme} =>
+                self.line == *line && self.slice == *slice && self.lexeme == Some(*lexeme),
+            PartialToken::Full(ref t) =>
+                self == *t,
         }
     }
 }
@@ -80,7 +92,6 @@ impl<'t> PartialEq<Token<'t>> for PartialToken<'t> {
         rhs == self
     }
 }
-
 
 impl<'t> Token<'t> {
     pub fn new (token_type: Type, line: usize, slice: (usize, usize), lexeme: Option<&str>) -> Token {

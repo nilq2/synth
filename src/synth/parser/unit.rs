@@ -6,10 +6,13 @@ use template::*;
 use alias::*;
 use rule::*;
 use std::sync::Arc;
+
 use extras::string::{StringExtras};
 use compiler::compiler::AST;
 
-#[derive(Debug)]
+use super::error::*;
+
+#[derive(Debug, Clone)]
 pub struct Node<'u> {
     pub variant: &'u Variant<'u, 'u>,
     pub tokens: Vec<Alias<'u, 'u>>,
@@ -41,7 +44,9 @@ impl<'u> Unit<'u> {
         Self { source, template }
     }
 
-    pub fn parse (&mut self) -> AST {
+    pub fn parse (&mut self) -> Outcome<AST> {
+        let mut response = Vec::new();
+        
         let tokens = self.source.tokens.as_ref().unwrap();
 
         let mut source = TokenIterator::new(tokens);
@@ -64,7 +69,12 @@ impl<'u> Unit<'u> {
                 if source.get(0).unwrap() == &Type(Type::EOF) {
                     break
                 }
-                panic!("no path matches at token {:?}", source.get(0));
+
+                let start = source.get(0).unwrap().slice.0;
+                let end   = source.get(0).unwrap().slice.1;
+                
+                response.push(Response::Error(Some(Full(&source.get(0).unwrap())), format!("no path matches at token: {}", source.get(0).unwrap().lexeme.unwrap())));
+                break
             }
 
             println!("   ++ matched {}", path.as_ref().unwrap().variant.name.lexeme.unwrap());
@@ -84,8 +94,12 @@ impl<'u> Unit<'u> {
         for path in paths.iter() {
             nodes.push(self.parse_path(&mut source, path));
         }
-
-        AST::new ( self.source, nodes )
+        
+        if response.len() > 0 {
+            Outcome::new(AST::new (self.source, nodes), Some(response))
+        } else {
+            Outcome::new(AST::new (self.source, nodes), None)
+        }
     }
 
     fn check_rule (

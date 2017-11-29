@@ -1,14 +1,11 @@
 use tokenizer::tokenizer::Source;
 use parser::unit::Node;
 
-
-
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct AST<'a> {
     source: &'a Source<'a>,
     ast: Vec<Node<'a>>,
 }
-
 
 impl<'a> AST<'a> {
     pub fn new (source: &'a Source<'a>, ast: Vec<Node<'a>>) -> AST<'a> {

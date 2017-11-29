@@ -1,6 +1,6 @@
 use tokenizer::token::Token;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Alias<'t, 's: 't> {
     pub name: &'t Token<'s>,
     pub token: usize,

@@ -72,8 +72,15 @@ fn main() {
 
             let mut u = unit::Unit::new(&u_src, t_arc.clone());
             let ast = u.parse();
-            ast.analyse();
-            ast.compile();
+
+            ast.dump(&u_lines);
+
+            if ast.is_error() {
+                return
+            }
+
+            ast.unwrap().analyse();
+            ast.unwrap().compile();
         }
 
     } else {
