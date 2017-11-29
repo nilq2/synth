@@ -5,13 +5,13 @@ use tokenizer::tokenizer::*;
 use rule::*;
 use alias::*;
 
+use super::error::*;
 
 #[derive(Debug)]
 pub struct Template<'t, 's: 't> {
     pub source: &'t Source<'s>,
     pub rules: Option<Vec<Rule<'t, 's>>>,
 }
-
 
 impl<'t, 's: 't> Template<'t, 's> {
     pub fn new (source: &'t Source<'s>) -> Self {
@@ -28,25 +28,36 @@ impl<'t, 's: 't> Template<'t, 's> {
         None
     }
 
-    pub fn parse (&mut self) {
+    pub fn parse (&mut self) -> Outcome<()> {
+        let mut response = Vec::new();
         let tokens = self.source.tokens.as_ref().unwrap();
 
         let mut iter = TokenIterator::new(tokens);
         let mut rules = Vec::new();
 
         while !iter.match_with(&[Type(EOF)]) {
-            if iter.check(&[Type(Word), Pair(Symbol, ":"), Type(EOL)])
-            || iter.check(&[Type(Word), Pair(Symbol, "!"), Type(EOL)]) {
-                rules.push(self.parse_rule(&mut iter));
-                println!("");
+            if iter.check(&[Type(Word), Pair(Symbol, ":"), Type(EOL)]) || iter.check(&[Type(Word), Pair(Symbol, "!"), Type(EOL)]) {
+                let (mut res, rule) = self.parse_rule(&mut iter);
+
+                response.append(&mut res);
+
+                rules.push(rule);
+                println!()
             }
-            //iter.next();
         }
 
         self.rules = Some(rules);
+
+        if response.len() > 0 {
+            Outcome::new((), Some(response))
+        } else {
+            Outcome::new((), None)
+        }
     }
 
-    fn parse_rule (&mut self, mut iter: &mut TokenIterator<'t, 's>) -> Rule<'t, 's> {
+    fn parse_rule (&self, mut iter: &mut TokenIterator<'t, 's>) -> (Vec<Response>, Rule<'t, 's>) {
+        let mut response = Vec::new();
+        
         let name = iter.next().unwrap();
         let is_matching = iter.check(&[Pair(Symbol, ":")]);
         iter.eat(2);
@@ -54,9 +65,8 @@ impl<'t, 's: 't> Template<'t, 's> {
         let mut segments: Vec<Segment<'t, 's>> = Vec::new();
         let mut variants: Vec<Variant<'t, 's>> = Vec::new();
 
-
         if !iter.match_with(&[Type(Indent)]) {
-            panic!("empty rule");
+            response.push(Response::Error(Some(Pos {line: name.line, slice: name.slice }), format!("empty rule: {}", name.lexeme.unwrap())))
         }
 
         println!(":: parsing rule {:?}", name.lexeme);
@@ -70,11 +80,11 @@ impl<'t, 's: 't> Template<'t, 's> {
             }
         }
 
-        Rule::new ( name, is_matching, variants, segments )
+        (response, Rule::new(name, is_matching, variants, segments))
     }
 
     fn parse_variant (
-        &mut self,
+        &self,
         mut iter: &mut TokenIterator<'t, 's>,
         rule: &'t str,
     ) -> Variant<'t, 's> {
@@ -132,7 +142,7 @@ impl<'t, 's: 't> Template<'t, 's> {
     }
 
     fn parse_segment (
-        &mut self,
+        &self,
         iter: &mut TokenIterator<'t, 's>,
         rule: &'t str,
         variant: Option<&'t str>,

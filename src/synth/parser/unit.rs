@@ -70,7 +70,7 @@ impl<'u> Unit<'u> {
                     break
                 }
 
-                response.push(Response::Error(Some(Full(&source.get(0).unwrap())), format!("no path matches at token: {}", source.get(0).unwrap().lexeme.unwrap())));
+                response.push(Response::Error(Some(Ref(&source.get(0).unwrap())), format!("no path matches at token: {}", source.get(0).unwrap().lexeme.unwrap())));
                 break
             }
 

@@ -3,7 +3,7 @@ use template::Template;
 use alias::Alias;
 use unit::Node;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Rule<'t, 's: 't> {
     pub name: &'t Token<'s>,
     pub is_matching: bool,
@@ -11,7 +11,7 @@ pub struct Rule<'t, 's: 't> {
     pub segments: Vec<Segment<'t, 's>>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Variant<'t, 's: 't> {
     pub name: &'t Token<'s>,
     pub rule: &'t str,
@@ -21,7 +21,7 @@ pub struct Variant<'t, 's: 't> {
     pub aliases: Vec<Alias<'t, 's>>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Segment<'t, 's: 't> {
     pub name: &'t Token<'s>,
 

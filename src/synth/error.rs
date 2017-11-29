@@ -47,147 +47,90 @@ impl<'o, T: Clone> Outcome<'o, T> {
     pub fn unwrap(&self) -> T {
         self.value.clone()
     }
+    
+    pub fn error(message: &str, line: usize, slice: (usize, usize), lines: &Vec<String>) {
+        println!("{}: {}", "error".red().bold(), message.white().bold());
+
+        let ln = format!("{} |", line).blue().bold();
+        println!("{}{}", line, lines.get(line - 1).unwrap());
+
+        for _ in 0 .. ln.len() + slice.0 {
+            print!(" ")
+        }
+
+        for _ in 0 .. slice.1 - slice.0 {
+            print!("{}", "^".red().bold())
+        }
+        
+        println!()
+    }
+    
+    pub fn warning(message: &str, line: usize, slice: (usize, usize), lines: &Vec<String>) {
+        println!("{}: {}", "warning".red().bold(), message.white().bold());
+
+        let ln = format!("{} |", line).blue().bold();
+        println!("{}{}", line, lines.get(line - 1).unwrap());
+
+        for _ in 0 .. ln.len() + slice.0 {
+            print!(" ")
+        }
+
+        for _ in 0 .. slice.1 - slice.0 {
+            print!("{}", "^".yellow().bold())
+        }
+        
+        println!()
+    }
+
+    pub fn note(message: &str, line: usize, slice: (usize, usize), lines: &Vec<String>) {
+        println!("{}: {}", "note".white().bold(), message.white().bold());
+
+        let ln = format!("{} |", line).blue().bold();
+        println!("{}{}", line, lines.get(line - 1).unwrap());
+
+        for _ in 0 .. ln.len() + slice.0 {
+            print!(" ")
+        }
+
+        for _ in 0 .. slice.1 - slice.0 {
+            print!("{}", "^".white().bold())
+        }
+        
+        println!()
+    }
 
     pub fn dump(&self, lines: &Vec<String>) -> &Self {
         if self.response.is_some() {
-            for value in self.response.clone().unwrap().iter() {
+            for value in self.response.as_ref().unwrap().iter() {
                 match *value {
-                    Response::Error(ref v, ref message) => {
-                        match *v {
-                            Some(ref token) => {
-                                match *token {
-                                    PartialToken::Full(ref token) => {
-                                        println!("{}: {}", "error".red().bold(), message.white().bold());
+                    Response::Error(ref v, ref message) => match *v {
+                        Some(ref token) => match *token {
+                            PartialToken::Ref(ref token)            => Self::error(message, token.line, token.slice, lines),
+                            PartialToken::Pos {ref line, ref slice} => Self::error(message, *line, *slice, lines),
+                            _ => (),
+                        },
 
-                                        let line = format!("{} |", token.line).blue().bold();
-                                        println!("{}{}", line, lines.get(token.line - 1).unwrap());
-
-                                        for _ in 0 .. line.len() + token.slice.0 {
-                                            print!(" ")
-                                        }
-
-                                        for _ in 0 .. token.slice.1 - token.slice.0 {
-                                            print!("{}", "^".red().bold())
-                                        }
-
-                                        println!()
-                                    },
-
-                                    PartialToken::PosLexeme {ref line, ref slice, ..} => {
-                                        println!("{}: {}", "error".red().bold(), message.white().bold());
-
-                                        let ln = format!("{} |", line).blue().bold();
-                                        println!("{}{}", ln, lines.get(line - 1).unwrap());
-
-                                        for _ in 0 .. ln.len() + slice.0 {
-                                            print!(" ")
-                                        }
-
-                                        for _ in 0 .. slice.1 - slice.0 {
-                                            print!("{}", "^".red().bold())
-                                        }
-                                        
-                                        println!()
-                                    },
-                                    
-                                    _ => (),
-                                }
-                            },
-
-                            None => (),
-                        }
+                        None => (),
                     },
                     
-                    Response::Warning(ref v, ref message) => {
-                        match *v {
-                            Some(ref token) => {
-                                match *token {
-                                    PartialToken::Full(ref token) => {
-                                        println!("{}: {}", "warning".yellow().bold(), message.white().bold());
-
-                                        let line = format!("{} |", token.line).blue().bold();
-                                        println!("{}{}", line, lines.get(token.line - 1).unwrap());
-
-                                        for _ in 0 .. line.len() + token.slice.0 {
-                                            print!(" ")
-                                        }
-
-                                        for _ in 0 .. token.slice.1 - token.slice.0 {
-                                            print!("{}", "^".yellow().bold())
-                                        }
-                                        
-                                        println!()
-                                    },
-
-                                    PartialToken::PosLexeme {ref line, ref slice, ..} => {
-                                        println!("{}: {}", "warning".yellow().bold(), message.white().bold());
-
-                                        let ln = format!("{} |", line).blue().bold();
-                                        println!("{}{}", ln, lines.get(line - 1).unwrap());
-
-                                        for _ in 0 .. ln.len() + slice.0 {
-                                            print!(" ")
-                                        }
-
-                                        for _ in 0 .. slice.1 - slice.0 {
-                                            print!("{}", "^".yellow().bold())
-                                        }
-                                        
-                                        println!()
-                                    },
-                                    
-                                    _ => (),
-                                }
-                            },
-                            
-                            None => (),
-                        }
+                    Response::Warning(ref v, ref message) => match *v {
+                        Some(ref token) => match *token {
+                            PartialToken::Ref(ref token)            => Self::warning(message, token.line, token.slice, lines),
+                            PartialToken::Pos {ref line, ref slice} => Self::warning(message, *line, *slice, lines),
+                            _ => (),
+                        },
+                        
+                        None => (),
                     },
 
-                    Response::Note(ref v, ref message) => {
-                        match *v {
-                            Some(ref token) => {
-                                match *token {
-                                    PartialToken::Full(ref token) => {
-                                        println!("{}: {}", "note".white().bold(), message.white().bold());
-
-                                        let line = format!("{} |", token.line).blue().bold();
-                                        println!("{}{}", line, lines.get(token.line - 1).unwrap());
-
-                                        for _ in 0 .. line.len() + token.slice.0 {
-                                            print!(" ")
-                                        }
-
-                                        for _ in 0 .. token.slice.1 - token.slice.0 {
-                                            print!("{}", "^".white().bold())
-                                        }
-                                        
-                                        println!()
-                                    },
-
-                                    PartialToken::PosLexeme {ref line, ref slice, ..} => {
-                                        println!("{}: {}", "note".white().bold(), message.white().bold());
-
-                                        let ln = format!("{} |", line).blue().bold();
-                                        println!("{}{}", ln, lines.get(line - 1).unwrap());
-
-                                        for _ in 0 .. ln.len() + slice.0 {
-                                            print!(" ")
-                                        }
-
-                                        for _ in 0 .. slice.1 - slice.0 {
-                                            print!("{}", "^".white().bold())
-                                        }
-                                        
-                                        println!()
-                                    },
-
-                                    _ => (),
-                                }
-                            },
-                            
-                            None => (),
-                        }
+                    Response::Note(ref v, ref message) => match *v {
+                        Some(ref token) => match *token {
+                            PartialToken::Ref(ref token)            => Self::note(message, token.line, token.slice, lines),
+                            PartialToken::Pos {ref line, ref slice} => Self::note(message, *line, *slice, lines),
+                            _ => (),
+                        },
+                        
+                        None => (),
                     },
                 }
             }
