@@ -110,7 +110,7 @@ impl<'o, T: Clone> Outcome<'o, T> {
                             _ => (),
                         },
 
-                        None => (),
+                        None => println!("{}: {}", "error".red().bold(), message.white().bold()),
                     },
                     
                     Response::Warning(ref v, ref message) => match *v {
@@ -120,7 +120,7 @@ impl<'o, T: Clone> Outcome<'o, T> {
                             _ => (),
                         },
                         
-                        None => (),
+                        None => println!("{}: {}", "warning".yellow().bold(), message.white().bold()),
                     },
 
                     Response::Note(ref v, ref message) => match *v {
@@ -130,7 +130,7 @@ impl<'o, T: Clone> Outcome<'o, T> {
                             _ => (),
                         },
                         
-                        None => (),
+                        None => println!("{}: {}", "note".white().bold(), message.white().bold()),
                     },
                 }
             }

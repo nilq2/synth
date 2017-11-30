@@ -1,4 +1,5 @@
 extern crate colored;
+use colored::*;
 
 use std::fs::File;
 use std::path::Path;
@@ -20,9 +21,11 @@ fn main() {
 
     if args.len() == 2 {
         if !Path::new(&args[1]).exists() {
-            panic!("no such file: {}", &args[1]);
+            println!("{}: {}", "error".red().bold(), format!("no such file: {}", &args[1]).white().bold());
+            return
         }
-        panic!("specify source files after template");
+        println!("{}: {}", "note".white().bold(), "specify source files after template".white().bold());
+        return
 
     } else if args.len() > 2 {
         println!("== started ==");
@@ -31,7 +34,10 @@ fn main() {
         println!("\n== template ==");
         let t_f: File = match File::open(&args[1]) {
             Ok(v) => v,
-            Err(_) => panic!("no such file: {}", &args[1]),
+            Err(_) => {
+                println!("{}: {}", "error".red().bold(), format!("no such file: {}", &args[1]).white().bold());
+                return
+            }
         };
 
         let t_raw  = BufReader::new(&t_f);
@@ -44,7 +50,9 @@ fn main() {
         }
 
         let mut t = template::Template::new(&t_src);
-        t.parse();
+        if t.parse().dump(&t_lines.iter().map(|n| n.as_str()).collect()).is_error() {
+            return
+        }
 
         let t_arc = Arc::new(t);
 
@@ -57,7 +65,10 @@ fn main() {
 
             let u_f: File = match File::open(&unit) {
                 Ok(v) => v,
-                Err(_) => panic!("no such file: {}", &unit),
+                Err(_) => {
+                    println!("{}: {}", "error".red().bold(), format!("no such file: {}", &unit).white().bold());
+                    return
+                }
             };
 
             let u_raw  = BufReader::new(&u_f);

@@ -5,8 +5,6 @@ use tokenizer::tokenizer::*;
 use rule::*;
 use alias::*;
 
-use std::string;
-
 use super::error::*;
 
 #[derive(Debug)]
@@ -31,31 +29,41 @@ impl<'t, 's: 't> Template<'t, 's> {
     }
 
     pub fn parse (&mut self) -> Outcome<()> {
-        let mut response = Vec::new();
-        let tokens = self.source.tokens.as_ref().unwrap();
+        let mut error_flag = false;
+        let tokens         = self.source.tokens.as_ref().unwrap();
 
         let mut iter = TokenIterator::new(tokens);
         let mut rules = Vec::new();
 
         while !iter.match_with(&[Type(EOF)]) {
             if iter.check(&[Type(Word), Pair(Symbol, ":"), Type(EOL)]) || iter.check(&[Type(Word), Pair(Symbol, "!"), Type(EOL)]) {
-                rules.push(self.parse_rule(&mut iter).dump(&self.source.lines).unwrap());
+                let outcome = self.parse_rule(&mut iter);
+
+                if outcome.is_error() {                    
+                    outcome.dump(&self.source.lines);
+                    error_flag = true;
+
+                    break
+                }
+                
+                rules.push(outcome.unwrap());
                 println!()
             }
         }
 
         self.rules = Some(rules);
-
-        if response.len() > 0 {
-            Outcome::new((), Some(response))
+        
+        if error_flag {
+            Outcome::new((), Some(vec!(Response::Error(None, "aborting due to previous errors".to_owned()))))
         } else {
             Outcome::new((), None)
         }
     }
 
     fn parse_rule (&self, mut iter: &mut TokenIterator<'t, 's>) -> Outcome<Rule<'t, 's>> {
-        let mut response = Vec::new();
-        
+        let mut error_flag = false;
+        let mut response   = Vec::new();
+
         let name = iter.next().unwrap();
         let is_matching = iter.check(&[Pair(Symbol, ":")]);
         iter.eat(2);
@@ -70,18 +78,40 @@ impl<'t, 's: 't> Template<'t, 's> {
 
             while !iter.match_with(&[Type(Dedent)]) {
                 if iter.check(&[Type(Word), Lexeme(":"), Lexeme("=")]) {
-                    variants.push(self.parse_variant(&mut iter, name.lexeme.unwrap()));
+                    let outcome = self.parse_variant(&mut iter, name.lexeme.unwrap());
+
+                    if outcome.is_error() {
+                        outcome.dump(&self.source.lines);
+                        error_flag = true;
+
+                        response.push(Response::Error(None, "failed variant".to_owned()));
+
+                        break
+                    }
+
+                    variants.push(outcome.unwrap())
 
                 } else if iter.check(&[Lexeme("["), Type(Word), Lexeme("]"), Type(EOL)]) {
-                    segments.push(self.parse_segment(&mut iter, name.lexeme.unwrap(), None));
+                    let outcome = self.parse_segment(&mut iter, name.lexeme.unwrap(), None);
+                    
+                    if outcome.is_error() {
+                        outcome.dump(&self.source.lines);
+                        error_flag = true;
+
+                        response.push(Response::Error(None, "failed segment".to_owned()));
+
+                        break
+                    }
+
+                    segments.push(outcome.unwrap())
                 }
             }
         }
-
-        if response.len() > 0 {
+        
+        if response.len() > 0 || error_flag {            
             Outcome::new(Rule::new(name, is_matching, variants, segments), Some(response))
         } else {
-            Outcome::new(Rule::new(name, is_matching, variants, segments), Some(response))
+            Outcome::new(Rule::new(name, is_matching, variants, segments), None)
         }
     }
 
@@ -89,7 +119,9 @@ impl<'t, 's: 't> Template<'t, 's> {
         &self,
         mut iter: &mut TokenIterator<'t, 's>,
         rule: &'t str,
-    ) -> Variant<'t, 's> {
+    ) -> Outcome<Variant<'t, 's>> {
+        
+        let mut response = Vec::new();
 
         let name = iter.get(0).unwrap();
         iter.eat(3);
@@ -101,7 +133,7 @@ impl<'t, 's: 't> Template<'t, 's> {
         let mut aliases: Vec<Alias<'t, 's>> = Vec::new();
 
         if iter.match_with(&[Type(EOL)]) {
-            panic!("variant has no pattern");
+            response.push(Response::Error(Some(Pos {line: name.line, slice: name.slice }), format!("variant has no pattern: {}", name.lexeme.unwrap())))
         }
 
         while !iter.match_with(&[Type(EOL)]) {
@@ -110,28 +142,42 @@ impl<'t, 's: 't> Template<'t, 's> {
                 iter.next();
 
                 if !iter.check(&[Type(Word)]) {
-                    panic!("can't alias non-word");
+                    response.push(Response::Error(Some(Pos {line: name.line, slice: name.slice }), format!("can't alias non-word: {}", name.lexeme.unwrap())));
+                    break
                 }
 
                 let elem = iter.get(0).unwrap().lexeme.unwrap();
 
                 if elem.to_string().to_uppercase() == elem.to_string() && Type::from_str(elem) == None {
-                    panic!("undefined type");
+                    response.push(Response::Error(Some(Pos {line: name.line, slice: name.slice }), format!("undefined type: {}", name.lexeme.unwrap())));
+                    break
                 }
 
                 //println!("   {}:{}", alias_name.lexeme.unwrap(), elem);
 
                 aliases.push(Alias::new(alias_name, tokens.len()));
             }
-
-            tokens.push(iter.next().unwrap());
+            
+            match iter.next() {
+                Some(ref t) => tokens.push(t),
+                None        => {
+                    response.push(Response::Error(Some(Pos {line: name.line, slice: name.slice }), format!("missing token: {}", name.lexeme.unwrap())));
+                    break
+                }
+            }
         }
 
         if iter.match_with(&[Type(Indent)]) {
             loop {
                 if iter.check(&[Pair(Symbol, "["), Type(Word), Pair(Symbol, "]"), Type(EOL)]) {
                     print!("   ");
-                    segments.push(self.parse_segment(&mut iter, &rule, Some(name.lexeme.unwrap())));
+                    let outcome = self.parse_segment(&mut iter, &rule, Some(name.lexeme.unwrap()));
+                    
+                    if outcome.is_error() {
+                        outcome.dump(&self.source.lines);
+                    }
+
+                    segments.push(outcome.unwrap());
                 }
 
                 if iter.match_with(&[Type(Dedent)]) {
@@ -140,7 +186,11 @@ impl<'t, 's: 't> Template<'t, 's> {
             }
         }
 
-        Variant::new ( name, &rule, tokens, segments, aliases )
+        if response.len() > 0 {            
+            Outcome::new(Variant::new(name, &rule, tokens, segments, aliases), Some(response))
+        } else {
+            Outcome::new(Variant::new(name, &rule, tokens, segments, aliases), None)
+        }
     }
 
     fn parse_segment (
@@ -148,7 +198,9 @@ impl<'t, 's: 't> Template<'t, 's> {
         iter: &mut TokenIterator<'t, 's>,
         rule: &'t str,
         variant: Option<&'t str>,
-    ) -> Segment<'t, 's> {
+    ) -> Outcome<Segment<'t, 's>> {
+        
+        let mut response = Vec::new();
 
         let name = iter.get(1).unwrap();
         iter.eat(3);
@@ -156,7 +208,7 @@ impl<'t, 's: 't> Template<'t, 's> {
         println!("   [] parsing segment {:?}", name.lexeme);
 
         if !iter.match_with(&[Type(EOL), Type(Indent)]) {
-            panic!("empty segment");
+            response.push(Response::Error(Some(Pos {line: name.line, slice: name.slice }), format!("empty segment: {}", name.lexeme.unwrap())))
         }
 
         let mut tokens: Vec<&'t Token<'s>> = Vec::new();
@@ -176,6 +228,10 @@ impl<'t, 's: 't> Template<'t, 's> {
 
         iter.next();
 
-        Segment::new ( name, rule, variant, tokens )
+        if response.len() > 0 {
+            Outcome::new(Segment::new(name, rule, variant, tokens), Some(response))
+        } else {
+            Outcome::new(Segment::new(name, rule, variant, tokens), None)
+        }
     }
 }

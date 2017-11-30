@@ -1,11 +1,9 @@
 !/def/comment /* */ //
 !/def/string " '
 
-foo:
+variable:
+    leti := let name:WORD \: type:WORD = e:expr EOL
+        [output]
+            write: const {type} {name} = {expr} ;
 
-bar:
-
-foobar:
-
-
-testytest:
+    grr :=
